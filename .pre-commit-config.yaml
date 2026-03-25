@@ -1,0 +1,46 @@
+# .pre-commit-config.yaml
+
+default_language_version:
+  python: python3.12
+
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.7
+    hooks:
+      - id: ruff-format
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.7
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+
+  - repo: https://github.com/pre-commit/mirrors-mypy
+    rev: v1.7.0
+    hooks:
+      - id: mypy
+        additional_dependencies: [types-torch, types-pillow, types-pandas]
+
+  - repo: https://github.com/codespell-project/codespell
+    rev: v2.2.0
+    hooks:
+      - id: codespell
+        args: [--ignore-words=.codespell-ignore]
+
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.5.0
+    hooks:
+      - id: check-added-large-files
+        args: ['--maxkb=4096']
+      - id: detect-private-key
+
+  - repo: https://github.com/pre-commit/mirrors-yamllint
+    rev: v1.33.0
+    hooks:
+      - id: yamllint
+        files: \.ya?ml$
+
+  - repo: https://github.com/abravalheri/validate-pyproject
+    rev: v0.16.3
+    hooks:
+      - id: validate-pyproject
