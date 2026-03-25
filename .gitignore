@@ -209,3 +209,12 @@ __marimo__/
 # Other
 tmp/
 reb/
+dataset/normal/
+dataset/normal_224/
+dataset/psoriasis/
+dataset/psoriasis_metadata.csv
+dataset/binary_manifest.csv
+model/pretrained_model/resnet/
+model/pretrained_model/siglip/
+model/trained_classifier/resnet/
+model/trained_classifier/siglip/
