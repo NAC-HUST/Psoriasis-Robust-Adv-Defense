@@ -12,12 +12,15 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "huggingface-hub>=0.35.3",
     "numpy>=2.4.3",
     "pandas>=3.0.1",
     "pillow>=12.1.1",
     "scipy>=1.17.1",
     "torch==2.9.0",
     "torchvision==0.24.0",
+    "tqdm>=4.67.1",
+    "transformers>=4.57.0",
 ]
 
 [dependency-groups]
@@ -67,3 +70,6 @@ strict = true
 minversion = "7.0"
 addopts = "-ra -q"
 testpaths = ["tests"]
+
+[project.scripts]
+psorad = "psorad.cli:main"
