@@ -6,7 +6,6 @@ from pathlib import Path
 import pandas as pd
 from PIL import Image
 
-
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".JPG", ".JPEG", ".PNG"}
 
 

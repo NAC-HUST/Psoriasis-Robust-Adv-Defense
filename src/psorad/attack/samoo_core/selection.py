@@ -68,7 +68,7 @@ def crowding_operator(a: Solution, b: Solution) -> int:
 
 
 def tournament(population: list[Solution], tournament_size: int) -> Solution:
-    participants = np.random.choice(population, size=(tournament_size,), replace=False)
+    participants = np.random.choice(population, size=(tournament_size,), replace=False)  # type: ignore[arg-type]
     best: Solution | None = None
 
     for participant in participants:

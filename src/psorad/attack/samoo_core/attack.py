@@ -52,7 +52,7 @@ class Attack:
             "fitness_process": self.fitness_trace,
             "success": success,
         }
-        np.save(self.params["save_directory"], payload, allow_pickle=True)
+        np.save(self.params["save_directory"], payload, allow_pickle=True)  # type: ignore[arg-type]
 
     def attack(self, loss_function: Any) -> None:
         image = self.params["x"]

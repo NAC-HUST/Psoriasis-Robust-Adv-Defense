@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Callable
 
 import numpy as np
 
@@ -17,12 +17,12 @@ class Solution:
     fitnesses: np.ndarray = field(default_factory=lambda: np.array([], dtype=np.float64))
     is_adversarial: bool | None = None
     domination_count: int = 0
-    dominated_solutions: list["Solution"] = field(default_factory=list)
+    dominated_solutions: list[Solution] = field(default_factory=list)
     rank: int = 0
     crowding_distance: float = 0.0
     loss: float = 0.0
 
-    def copy(self) -> "Solution":
+    def copy(self) -> Solution:
         return deepcopy(self)
 
     @property
@@ -46,7 +46,7 @@ class Solution:
             col = pixel_index % width
             x_adv[row, col] += self.values[i] * self.p_size
 
-        return np.clip(x_adv, 0.0, 1.0)
+        return np.clip(x_adv, 0.0, 1.0)  # type: ignore[no-any-return]
 
     def evaluate(self, loss_function: Callable[[np.ndarray], list[float] | tuple[float, ...]], include_dist: bool) -> None:
         img_adv = self.generate_image()
@@ -59,7 +59,7 @@ class Solution:
         self.fitnesses = np.array(objectives, dtype=np.float64)
         self.loss = float(objectives[0])
 
-    def dominates(self, other: "Solution") -> bool:
+    def dominates(self, other: Solution) -> bool:
         assert self.is_adversarial is not None and other.is_adversarial is not None
 
         if self.is_adversarial and not other.is_adversarial:

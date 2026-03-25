@@ -26,11 +26,11 @@ class SiglipBinaryClassifier(nn.Module):
     def forward(self, pixel_values: Tensor) -> Tensor:
         outputs = self.vision_model(pixel_values=pixel_values)
         pooled = outputs.pooler_output
-        return self.classifier(pooled).squeeze(1)
+        return self.classifier(pooled).squeeze(1)  # type: ignore[no-any-return]
 
 
 def build_resnet50_binary(pretrained_weight_path: str | None = None) -> nn.Module:
-    model = models.resnet50(weights=None)
+    model = models.resnet50(weights=None)  # type: ignore[assignment]
     in_features = model.fc.in_features
     model.fc = nn.Linear(in_features, 1)
 
@@ -38,4 +38,4 @@ def build_resnet50_binary(pretrained_weight_path: str | None = None) -> nn.Modul
         state_dict = torch.load(pretrained_weight_path, map_location="cpu")
         model.load_state_dict(state_dict, strict=False)
 
-    return model
+    return model  # type: ignore[no-any-return]

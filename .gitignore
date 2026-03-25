@@ -218,3 +218,4 @@ model/pretrained_model/resnet/
 model/pretrained_model/siglip/
 model/trained_classifier/resnet/
 model/trained_classifier/siglip/
+check_quality.py

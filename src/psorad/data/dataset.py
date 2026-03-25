@@ -63,8 +63,8 @@ def build_loaders(
     generator = torch.Generator().manual_seed(seed)
     train_subset, val_subset = random_split(base_dataset, [train_len, val_len], generator=generator)
 
-    train_subset.dataset.transform = build_transforms(image_size=image_size, for_siglip=for_siglip, train=True)
-    val_subset.dataset.transform = build_transforms(image_size=image_size, for_siglip=for_siglip, train=False)
+    train_subset.dataset.transform = build_transforms(image_size=image_size, for_siglip=for_siglip, train=True)  # type: ignore[attr-defined]
+    val_subset.dataset.transform = build_transforms(image_size=image_size, for_siglip=for_siglip, train=False)  # type: ignore[attr-defined]
 
     train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
     val_loader = DataLoader(val_subset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
