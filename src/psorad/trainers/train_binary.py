@@ -31,6 +31,8 @@ class TrainConfig:
 
 
 def _binary_accuracy(logits: Tensor, targets: Tensor) -> float:
+    logits = logits.reshape(-1)
+    targets = targets.reshape(-1)
     probs = torch.sigmoid(logits)
     preds = (probs >= 0.5).float()
     correct = (preds == targets).float().mean()
@@ -45,8 +47,8 @@ def _evaluate(model: nn.Module, loader: torch.utils.data.DataLoader[tuple[Tensor
     with torch.no_grad():
         for images, labels in loader:
             images = images.to(device)
-            labels = labels.to(device)
-            logits = model(images)
+            labels = labels.to(device).reshape(-1)
+            logits = model(images).reshape(-1)
             loss = criterion(logits, labels)
             losses.append(float(loss.item()))
             accs.append(_binary_accuracy(logits, labels))
@@ -96,8 +98,8 @@ def train_binary_classifier(config: TrainConfig) -> Path:
 
         for images, labels in progress:
             images = images.to(device)
-            labels = labels.to(device)
-            logits = model(images)
+            labels = labels.to(device).reshape(-1)
+            logits = model(images).reshape(-1)
             loss = criterion(logits, labels)
 
             optimizer.zero_grad(set_to_none=True)
