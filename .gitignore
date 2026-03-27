@@ -207,6 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 # Other
+.copilot/
 tmp/
 reb/
 dataset/processed_data/
