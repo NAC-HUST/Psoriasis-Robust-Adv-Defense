@@ -5,9 +5,9 @@ hero:
   name: "Psoriasis Robust Adv&Defense"
   text: "银屑病医学影像对抗鲁棒性研究"
   tagline: "数据预处理、模型训练与对抗攻击的一体化研究框架。"
-  image:
-    src: "https://vitepress.dev/vitepress-logo-large.webp"
-    alt: "PsoraDefense Docs"
+#   image:
+#     src: "https://vitepress.dev/vitepress-logo-large.webp"
+#     alt: "PsoraDefense Docs"
   actions:
     - theme: brand
       text: "快速开始"
@@ -30,14 +30,16 @@ features:
     details: "docs-src 维护源码，docs 保存静态产物用于 Pages 发布。"
 ---
 
+Ciallo～ (∠・ω< )⌒★
+
 # Psoriasis Robust Adv&Defense
 
 > 银屑病医学影像诊断的对抗攻防协同鲁棒性增强方法研究
 
-[![Status](https://img.shields.io/badge/status-in%20progress-yellow)](https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense)
+<!-- [![Status](https://img.shields.io/badge/status-in%20progress-yellow)](https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense)
 [![License](https://img.shields.io/badge/license-GPLv3-blue)](https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense/blob/main/LICENSE)
 [![University](https://img.shields.io/badge/university-HUST-red)](https://www.hust.edu.cn/)
-[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/) -->
 
 ## 项目概览
 
@@ -138,16 +140,6 @@ uv run main.py attack \
 
 更多详情见 [快速开始指南](getting-started/quickstart.md)
 
-## 学术信息
-
-### 研究成果
-
-**论文标题**: 银屑病医学影像诊断的对抗攻防协同鲁棒性增强方法
-
-**作者**: Cao WJ, Cheng Q, Li YX, Feng ZY, Li YX
-
-**机构**: 华中科技大学 (HUST)
-
 ## 参与贡献
 
 欢迎提交 Issue 和 Pull Request！请参考 [贡献指南](contributing/guide.md) 了解详情。
@@ -169,13 +161,11 @@ pytest                # 单元测试
 ## 联系方式
 
 - **GitHub Issues**: [报告问题或建议](https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense/issues)
-- **机构**: 华中科技大学 (HUST)
-- **官网**: [www.hust.edu.cn](https://www.hust.edu.cn/)
 
----
+<!-- ---
 
 <div align="center">
 
-Maintained by HUST Researchers
+Maintained by NAC-HUST Members
 
-</div>
+</div> -->

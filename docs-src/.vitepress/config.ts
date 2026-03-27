@@ -79,7 +79,7 @@ export default defineConfig({
     ],
     footer: {
       message: 'Licensed under GPLv3',
-      copyright: 'Copyright © 2024-2026 HUST Researchers'
+      copyright: 'Copyright © 2025-present NAC-HUST Members'
     }
   }
 })
