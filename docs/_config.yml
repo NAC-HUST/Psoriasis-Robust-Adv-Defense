@@ -1,0 +1,43 @@
+# Jekyll configuration for GitHub Pages
+title: Psoriasis Robust Adv&Defense
+description: 银屑病医学影像诊断的对抗攻防协同鲁棒性增强方法研究
+url: https://NAC-HUST.github.io/Psoriasis-Robust-Adv-Defense
+baseurl: /Psoriasis-Robust-Adv-Defense
+
+# Theme
+theme: null
+
+# Language
+lang: zh-CN
+
+# Build settings
+exclude:
+  - .gitignore
+  - README.md
+  - LICENSE
+
+# Markdown processor
+markdown: kramdown
+
+# Plugins
+plugins:
+  - jekyll-seo-tag
+  - jekyll-feed
+
+# SEO
+author:
+  name: NAC-HUST
+  email: help@example.com
+
+# Social links
+social:
+  links:
+    - https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense
+    - https://www.hust.edu.cn/
+
+# Analytics (optional)
+google_analytics: 
+
+# Comments (optional)
+comments:
+  provider: false
