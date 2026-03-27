@@ -1,0 +1,56 @@
+[project]
+name = "psoriasis-robust-adv-defense"
+version = "0.1.0"
+description = "A Study on Collaborative Adversarial Attack-Defense Mechanisms for Robustness Enhancement in Psoriasis Medical Image Diagnosis."
+authors = [
+    { name = "WJ.Cao" },
+    { name = "Q.Cheng" },
+    { name = "YX.Li" },
+    { name = "ZY.Feng" },
+    { name = "YX.Li" }
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "huggingface-hub>=0.35.3",
+    "numpy>=2.4.3",
+    "pandas>=3.0.1",
+    "pillow>=12.1.1",
+    "scipy>=1.17.1",
+    "torch==2.9.0",
+    "torchvision==0.24.0",
+    "tqdm>=4.67.1",
+    "transformers>=4.57.0",
+]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.19.1",
+    "pytest>=9.0.2",
+    "ruff>=0.15.7",
+]
+
+docs = [
+    "mkdocs==1.5.3",
+    "mkdocs-material==9.5.3",
+    "mkdocs-awesome-pages-plugin==2.9.2",
+    "mkdocs-git-revision-date-localized-plugin==1.2.2",
+    "pymdown-extensions==10.5",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["psorad*"]
+
+# 定义额外的 PyTorch CUDA 索引
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
