@@ -217,4 +217,5 @@ model/trained_classifier/resnet/
 model/trained_classifier/resnet50/
 model/trained_classifier/siglip/
 output/
+tools/bak/
 check_quality.py
