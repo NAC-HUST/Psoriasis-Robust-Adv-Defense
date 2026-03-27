@@ -1,3 +1,3 @@
-from psorad.attack.samoo_core.attack import Attack
+from psorad.attack.samoo_core.attack import Attack, AttackParams
 
-__all__ = ["Attack"]
+__all__ = ["Attack", "AttackParams"]

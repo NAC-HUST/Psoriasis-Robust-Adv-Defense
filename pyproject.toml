@@ -26,10 +26,10 @@ dependencies = [
 [dependency-groups]
 dev = [
     "mypy>=1.19.1",
-    "pre-commit>=4.5.1",
     "pytest>=9.0.2",
     "ruff>=0.15.7",
 ]
+# 可加入 "pre-commit>=4.5.1",
 
 [build-system]
 requires = ["setuptools>=61.0"]

@@ -53,18 +53,20 @@ pre-commit run -a
 若你的修改涉及训练/攻击流程，建议至少跑通以下链路：
 
 ```bash
-uv run main.py preprocess
+uv run main.py preprocess --datadir psoriasis_normal
 uv run main.py download-models
-uv run main.py train --backbone resnet50
-uv run main.py attack --backbone resnet50 --checkpoint model/trained_classifier/resnet50/best_binary_classifier.pt
+uv run main.py train --backbone resnet50 --modelname resnet50 --datadir psoriasis_normal
+uv run main.py attack --backbone resnet50 --checkpoint model/trained_classifier/resnet50/best_classifier.pt
 ```
 
 若涉及 SigLIP，请额外验证：
 
 ```bash
-uv run main.py train --backbone siglip
-uv run main.py attack --backbone siglip --checkpoint model/trained_classifier/siglip/best_binary_classifier.pt
+uv run main.py train --backbone siglip --modelname siglip --datadir psoriasis_normal
+uv run main.py attack --backbone siglip --checkpoint model/trained_classifier/siglip/best_classifier.pt
 ```
+
+备注：`train` 命令中 `--backbone` 必填，`--modelname` 仅用于指定输出模型文件名。
 
 ## 6. 提交信息建议
 
