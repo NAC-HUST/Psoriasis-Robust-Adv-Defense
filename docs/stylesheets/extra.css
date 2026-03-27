@@ -1,0 +1,184 @@
+/* 自定义样式扩展 */
+
+:root {
+  /* 自定义颜色变量 */
+  --md-primary-fg-color: #0f3a7d;
+  --md-primary-fg-color--light: #1e5fb3;
+  --md-primary-fg-color--dark: #0a2a5e;
+  --md-accent-fg-color: #ff6b5b;
+  
+  /* 医学主题 */
+  --medical-primary: #0f3a7d;
+  --medical-accent: #ff6b5b;
+  --medical-success: #66bb6a;
+  --medical-warning: #ffa726;
+  --medical-error: #ef5350;
+}
+
+/* 头部自定义 */
+.md-header {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* 侧边栏自定义 */
+.md-nav__link {
+  transition: all 0.2s ease;
+}
+
+.md-nav__link:hover {
+  color: var(--medical-accent);
+}
+
+/* 代码块自定义 */
+.md-typeset code {
+  background-color: rgba(15, 58, 125, 0.08);
+  color: #0f3a7d;
+  border-radius: 4px;
+  padding: 2px 6px;
+}
+
+.md-typeset pre > code {
+  background-color: #1a1a1a;
+  color: #e0e0e0;
+}
+
+/* 提示框自定义 */
+.admonition {
+  border-left: 4px solid var(--medical-primary);
+}
+
+.admonition.note {
+  border-left-color: var(--medical-primary);
+  background-color: rgba(15, 58, 125, 0.05);
+}
+
+.admonition.warning {
+  border-left-color: var(--medical-warning);
+  background-color: rgba(255, 167, 38, 0.05);
+}
+
+.admonition.success {
+  border-left-color: var(--medical-success);
+  background-color: rgba(102, 187, 106, 0.05);
+}
+
+/* 按钮自定义 */
+.md-button {
+  transition: all 0.2s ease;
+}
+
+.md-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.md-button--primary {
+  background-color: var(--medical-accent);
+}
+
+.md-button--primary:hover {
+  background-color: #ff5b4a;
+}
+
+/* 表格自定义 */
+.md-typeset table {
+  border-collapse: collapse;
+}
+
+.md-typeset table tbody tr:hover {
+  background-color: rgba(15, 58, 125, 0.05);
+}
+
+.md-typeset table thead th {
+  background-color: rgba(15, 58, 125, 0.1);
+  color: var(--medical-primary);
+  font-weight: 600;
+}
+
+/* 链接自定义 */
+.md-typeset a {
+  color: var(--medical-primary);
+  text-decoration: none;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.md-typeset a:hover {
+  color: var(--medical-accent);
+  border-bottom-color: var(--medical-accent);
+}
+
+/* 标题自定义 */
+.md-typeset h1 {
+  color: var(--medical-primary);
+  font-weight: 700;
+  border-bottom: 2px solid var(--medical-accent);
+  padding-bottom: 8px;
+}
+
+.md-typeset h2 {
+  color: var(--medical-primary);
+  font-weight: 600;
+  margin-top: 1.5em;
+}
+
+.md-typeset h3 {
+  color: #0f3a7d;
+  font-weight: 600;
+}
+
+/* 列表项自定义 */
+.md-typeset li {
+  line-height: 1.8;
+}
+
+.md-typeset li::marker {
+  color: var(--medical-accent);
+}
+
+/* 内容容器自定义 */
+.md-content {
+  font-size: 16px;
+  line-height: 1.8;
+}
+
+.md-content__inner {
+  padding: 2rem 1.5rem;
+}
+
+/* Tabs 自定义 */
+.md-typeset .tabbed-set {
+  border: 1px solid rgba(15, 58, 125, 0.2);
+  border-radius: 4px;
+}
+
+.md-typeset .tabbed-set > input:checked + label {
+  color: var(--medical-accent);
+  border-bottom-color: var(--medical-accent);
+}
+
+/* 代码行号 */
+.c {
+  color: #999;
+}
+
+/* 自定义 emoji 大小 */
+.md-typeset img.twemoji {
+  height: 1.2em;
+  width: 1.2em;
+}
+
+/* 响应式微调 */
+@media (max-width: 768px) {
+  .md-content__inner {
+    padding: 1.5rem 1rem;
+  }
+  
+  .md-typeset h1 {
+    font-size: 1.8rem;
+  }
+  
+  .md-typeset h2 {
+    font-size: 1.4rem;
+  }
+}
