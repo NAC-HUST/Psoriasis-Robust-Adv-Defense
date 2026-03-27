@@ -1,0 +1,15 @@
+{
+  "name": "psoriasis-robust-adv-defense-docs",
+  "private": true,
+  "version": "0.1.0",
+  "description": "VitePress docs for Psoriasis-Robust-Adv-Defense",
+  "scripts": {
+    "docs:dev": "vitepress dev docs --host",
+    "docs:build": "vitepress build docs",
+    "docs:preview": "vitepress preview docs"
+  },
+  "devDependencies": {
+    "vitepress": "^1.6.3",
+    "vue": "^3.5.13"
+  }
+}

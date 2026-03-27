@@ -37,26 +37,28 @@ cd Psoriasis-Robust-Adv-Defense
 
 ### 2. 使用 uv 安装（推荐）
 
-!!! note "什么是 uv?"
-    `uv` 是一个超快速的 Python 包管理器，用 Rust 编写，比 pip 快 10-100 倍。
-    [官方文档](https://docs.astral.sh/uv/)
+::: tip 什么是 uv?
+`uv` 是一个超快速的 Python 包管理器，用 Rust 编写，比 pip 快 10-100 倍。
+[官方文档](https://docs.astral.sh/uv/)
+:::
 
 #### 安装 uv
 
-=== "Linux / macOS"
-    ```bash
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    ```
+::: code-group
 
-=== "Windows (PowerShell)"
-    ```powershell
-    powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-    ```
+```bash [Linux / macOS]
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
 
-=== "Homebrew"
-    ```bash
-    brew install uv
-    ```
+```powershell [Windows (PowerShell)]
+powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+```bash [Homebrew]
+brew install uv
+```
+
+:::
 
 #### 使用 uv 安装依赖
 
@@ -148,8 +150,9 @@ python -c "import torch; print(f'CUDA Available: {torch.cuda.is_available()}')"
 python -c "import torch; print(f'GPU: {torch.cuda.get_device_name(0)}')"
 ```
 
-!!! success "GPU 正常工作"
-    如果输出显示 `CUDA Available: True` 和具体的 GPU 名称，说明 GPU 支持配置成功。
+::: info GPU 正常工作
+如果输出显示 `CUDA Available: True` 和具体的 GPU 名称，说明 GPU 支持配置成功。
+:::
 
 ### Apple Silicon (M1/M2)
 
@@ -162,29 +165,33 @@ python -c "import torch; print(torch.backends.mps.is_available())"
 
 ### IDE 推荐
 
-!!! tip "推荐使用 VS Code"
-    ```bash
-    # 安装 Python 扩展
-    code --install-extension ms-python.python
-    code --install-extension ms-python.vscode-pylance
-    ```
+::: tip 推荐使用 VS Code
+```bash
+# 安装 Python 扩展
+code --install-extension ms-python.python
+code --install-extension ms-python.vscode-pylance
+```
+:::
 
 ### 编辑器设置
 
-=== ".vscode/settings.json"
-    ```json
-    {
-        "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
-        "python.linting.pylintEnabled": false,
-        "python.linting.flake8Enabled": true,
-        "python.linting.mypyEnabled": true,
-        "python.formatting.provider": "black",
-        "[python]": {
-            "editor.formatOnSave": true,
-            "editor.defaultFormatter": "ms-python.python"
-        }
+::: code-group
+
+```json [.vscode/settings.json]
+{
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+    "python.linting.pylintEnabled": false,
+    "python.linting.flake8Enabled": true,
+    "python.linting.mypyEnabled": true,
+    "python.formatting.provider": "black",
+    "[python]": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "ms-python.python"
     }
-    ```
+}
+```
+
+:::
 
 ### 代码检查工具
 

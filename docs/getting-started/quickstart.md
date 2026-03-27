@@ -50,46 +50,45 @@ uv run main.py preprocess \
 uv run main.py download-models
 ```
 
-!!! note "首次下载可能需要几分钟"
-    - ResNet50: ~100MB
-    - SigLIP: ~500MB
-    
-    由于网络原因，如果下载超时，可设置镜像源：
-    ```bash
-    export HF_ENDPOINT=https://hf-mirror.com
-    uv run main.py download-models
-    ```
+::: tip 首次下载可能需要几分钟
+- ResNet50: ~100MB
+- SigLIP: ~500MB
+
+由于网络原因，如果下载超时，可设置镜像源：
+```bash
+export HF_ENDPOINT=https://hf-mirror.com
+uv run main.py download-models
+```
+:::
 
 ✅ **输出**: `model/pretrained_model/`
 
 ### 步骤 4️⃣ 训练分类器
 
-=== "ResNet50 (推荐)"
+::: code-group
 
-    ```bash
-    uv run main.py train \
-        --backbone resnet50 \
-        --datadir psoriasis_normal \
-        --epochs 3 \
-        --batch-size 16 \
-        --learning-rate 1e-4
-    ```
-    
-    ⏱️ **预计时间**: 5-10 分钟（带 GPU）
+```bash [ResNet50 (推荐)]
+uv run main.py train \
+    --backbone resnet50 \
+    --datadir psoriasis_normal \
+    --epochs 3 \
+    --batch-size 16 \
+    --learning-rate 1e-4
+```
 
-=== "SigLIP (Vision-Language)"
+```bash [SigLIP (Vision-Language)]
+uv run main.py train \
+    --backbone siglip \
+    --datadir psoriasis_normal \
+    --epochs 3 \
+    --batch-size 16 \
+    --learning-rate 1e-4 \
+    --freeze-siglip-backbone
+```
 
-    ```bash
-    uv run main.py train \
-        --backbone siglip \
-        --datadir psoriasis_normal \
-        --epochs 3 \
-        --batch-size 16 \
-        --learning-rate 1e-4 \
-        --freeze-siglip-backbone
-    ```
-    
-    ⏱️ **预计时间**: 10-15 分钟（带 GPU）
+:::
+
+ResNet50 预计 5-10 分钟（GPU）；SigLIP 预计 10-15 分钟（GPU）。
 
 ✅ **输出**: `model/trained_classifier/<backbone>/best_classifier.pt`
 
@@ -122,16 +121,21 @@ output/attack/resnet50/
 
 ### 关键指标说明
 
-=== "成功率 (Success Rate)"
-    模型在对抗样本上做出错误预测的比例。值越高攻击效果越好。
-    $$\text{SR} = \frac{\text{错误预测数}}{\text{总样本数}} \times 100\%$$
+::: details 成功率 (Success Rate)
+模型在对抗样本上做出错误预测的比例。值越高攻击效果越好。
 
-=== "稀疏性 (Sparsity)"
-    被修改的像素比例。值越低攻击越稀疏。
-    $$\text{稀疏性} = \frac{\text{修改像素数}}{H \times W \times C} \times 100\%$$
+$$\text{SR} = \frac{\text{错误预测数}}{\text{总样本数}} \times 100\%$$
+:::
 
-=== "扰动强度 (Perturbation)"
-    修改的平均幅度，用 $\ell_2$ 范数或 $\ell_\infty$ 范数衡量。
+::: details 稀疏性 (Sparsity)
+被修改的像素比例。值越低攻击越稀疏。
+
+$$\text{稀疏性} = \frac{\text{修改像素数}}{H \times W \times C} \times 100\%$$
+:::
+
+::: details 扰动强度 (Perturbation)
+修改的平均幅度，用 $\ell_2$ 范数或 $\ell_\infty$ 范数衡量。
+:::
 
 ## 🔧 常见命令参考
 

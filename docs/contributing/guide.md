@@ -322,10 +322,13 @@ class TestSAMOOAttacker:
 
 ### 修改文档
 
-项目文档使用 MkDocs + Material 主题，位于 `docs/` 目录：
+项目文档使用 VitePress，位于 `docs/` 目录：
 
 ```
 docs/
+├── .vitepress/
+│   ├── config.ts
+│   └── theme/
 ├── index.md                    # 首页
 ├── getting-started/
 │   ├── overview.md
@@ -339,11 +342,11 @@ docs/
 ### 本地预览
 
 ```bash
-# 安装 mkdocs
-pip install mkdocs mkdocs-material
+# 安装前端依赖
+npm install
 
 # 启动本地服务器
-mkdocs serve
+npm run docs:dev
 
 # 访问 http://localhost:8000
 ```

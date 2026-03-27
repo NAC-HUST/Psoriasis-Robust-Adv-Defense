@@ -1,3 +1,27 @@
+---
+layout: home
+
+hero:
+    name: "Psoriasis Robust Adv&Defense"
+    text: "银屑病医学影像的对抗鲁棒性研究"
+    tagline: "基于 SAMOO 的攻防协同框架，支持 ResNet50 与 SigLIP 的统一评估与训练。"
+    actions:
+        - theme: brand
+            text: 快速开始
+            link: /getting-started/quickstart
+        - theme: alt
+            text: GitHub
+            link: https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense
+
+features:
+    - title: 端到端闭环
+        details: 从数据预处理、模型下载到分类训练与对抗攻击，形成完整实验链路。
+    - title: 多模型统一接口
+        details: 同时支持 ResNet50 与 SigLIP，在同一 CLI 下完成训练和攻击对比。
+    - title: 医学场景导向
+        details: 面向银屑病影像诊断鲁棒性问题，强调可复现和工程可落地。
+---
+
 # 🏥 Psoriasis Robust Adv&Defense
 
 > 银屑病医学影像诊断的对抗攻防协同鲁棒性增强方法研究
@@ -20,35 +44,35 @@
 
 ## ✨ 主要特性
 
-=== "🚀 端到端流程"
-    
-    从数据预处理、模型下载，到训练分类器，再到对抗攻击，**一键完成全流程**。
-    
-    ```bash
-    uv run main.py preprocess --datadir psoriasis_normal
-    uv run main.py download-models
-    uv run main.py train --backbone resnet50 --epochs 3
-    uv run main.py attack --backbone resnet50
-    ```
+::: details 🚀 端到端流程
+从数据预处理、模型下载，到训练分类器，再到对抗攻击，**一键完成全流程**。
 
-=== "🤖 多架构支持"
-    
-    灵活支持 **ResNet50** 与 **SigLIP** 骨干网络，可任意组合训练和攻击。
-    
-    - ResNet50: CNNs，快速高效
-    - SigLIP: Vision-Language，0-shot 能力
+```bash
+uv run main.py preprocess --datadir psoriasis_normal
+uv run main.py download-models
+uv run main.py train --backbone resnet50 --epochs 3
+uv run main.py attack --backbone resnet50
+```
+:::
 
-=== "📊 完整数据集"
-    
-    支持 **CIFAR-10**、**ImageNette**、**银屑病患者数据**，提供自动预处理管道。
-    
-    - 等比缩放 + 中心裁剪
-    - 统一 224×224 分辨率
-    - 自动类别识别
+::: details 🤖 多架构支持
+灵活支持 **ResNet50** 与 **SigLIP** 骨干网络，可任意组合训练和攻击。
 
-=== "🎓 学术输出"
-    
-    推进医学影像诊断的对抗鲁棒性研究，支持学术发表和开源贡献。
+- ResNet50: CNNs，快速高效
+- SigLIP: Vision-Language，0-shot 能力
+:::
+
+::: details 📊 完整数据集
+支持 **CIFAR-10**、**ImageNette**、**银屑病患者数据**，提供自动预处理管道。
+
+- 等比缩放 + 中心裁剪
+- 统一 224×224 分辨率
+- 自动类别识别
+:::
+
+::: details 🎓 学术输出
+推进医学影像诊断的对抗鲁棒性研究，支持学术发表和开源贡献。
+:::
 
 ## 🏗️ 项目架构
 

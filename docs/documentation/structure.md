@@ -83,12 +83,14 @@ Psoriasis-Robust-Adv-Defense/
 │       └── ...
 │
 ├── docs/                                # 文档（本网站）
+│   ├── .vitepress/
+│   │   ├── config.ts
+│   │   └── theme/
 │   ├── index.md
 │   ├── getting-started/
 │   ├── documentation/
 │   ├── research/
-│   ├── contributing/
-│   └── mkdocs.yml
+│   └── contributing/
 │
 ├── tests/                               # 单元测试
 │   ├── __init__.py
@@ -111,7 +113,7 @@ Psoriasis-Robust-Adv-Defense/
 │   └── ...
 │
 ├── pyproject.toml                       # 项目配置
-├── mkdocs.yml                           # 文档配置
+├── package.json                         # VitePress 构建配置
 ├── README.md                            # 项目首页
 ├── LICENSE                              # 许可证 (GPLv3)
 ├── CONTRIBUTING.md                      # 贡献指南
@@ -263,15 +265,17 @@ requires-python = ">=3.12"
 psorad = "psorad.cli:main"  # 定义 CLI 入口
 ```
 
-### mkdocs.yml
+### docs/.vitepress/config.ts
 
 文档网站配置：
 
-```yaml
-site_name: Psoriasis Robust Adv&Defense
-theme:
-  name: material
-  language: zh
+```ts
+import { defineConfig } from 'vitepress'
+
+export default defineConfig({
+    lang: 'zh-CN',
+    base: '/Psoriasis-Robust-Adv-Defense/'
+})
 ```
 
 ## 🔧 开发规范

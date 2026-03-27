@@ -132,13 +132,15 @@ model/pretrained_model/
     └── ...
 ```
 
-!!! note "网络问题排查"
-    如果下载缓慢或超时：
-    ```bash
-    # 使用 HF Mirror (中国地区)
-    export HF_ENDPOINT=https://hf-mirror.com
-    uv run main.py download-models
-    ```
+::: tip 网络问题排查
+如果下载缓慢或超时：
+
+```bash
+# 使用 HF Mirror (中国地区)
+export HF_ENDPOINT=https://hf-mirror.com
+uv run main.py download-models
+```
+:::
 
 ---
 
@@ -245,14 +247,15 @@ Val Loss: 0.4123, Val Acc: 0.8123
 Saved best checkpoint: model/trained_classifier/resnet50/best_classifier.pt
 ```
 
-!!! tip "显存不足?"
-    ```bash
-    # 减小 batch-size
-    uv run main.py train \
-        --backbone resnet50 \
-        --datadir psoriasis_normal \
-        --batch-size 8
-    ```
+::: tip 显存不足?
+```bash
+# 减小 batch-size
+uv run main.py train \
+    --backbone resnet50 \
+    --datadir psoriasis_normal \
+    --batch-size 8
+```
+:::
 
 ---
 
