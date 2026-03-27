@@ -7,8 +7,8 @@ from torch import Tensor, nn
 from torchvision import models
 
 
-class SiglipBinaryClassifier(nn.Module):
-    def __init__(self, pretrained_dir_or_id: str, freeze_backbone: bool = True):
+class SiglipClassifier(nn.Module):
+    def __init__(self, pretrained_dir_or_id: str, num_classes: int = 2, freeze_backbone: bool = True):
         super().__init__()
         try:
             from transformers import AutoModel
@@ -27,7 +27,7 @@ class SiglipBinaryClassifier(nn.Module):
         else:
             raise ValueError("无法从 SigLIP 配置中推断图像特征维度。")
 
-        self.classifier = nn.Linear(feature_dim, 1)
+        self.classifier = nn.Linear(feature_dim, num_classes)
 
         if freeze_backbone:
             for param in self.vision_model.parameters():
@@ -46,10 +46,10 @@ class SiglipBinaryClassifier(nn.Module):
             else:
                 raise RuntimeError("无法从 SigLIP 输出中提取图像特征。")
 
-        return self.classifier(image_features).squeeze(1)  # type: ignore[no-any-return]
+        return self.classifier(image_features)  # type: ignore[no-any-return]
 
 
-def build_resnet50_binary(pretrained_weight_path: str | None = None) -> nn.Module:
+def build_resnet50_classifier(pretrained_weight_path: str | None = None, num_classes: int = 2) -> nn.Module:
     model = models.resnet50(weights=None)  # type: ignore[assignment]
 
     if pretrained_weight_path is not None and Path(pretrained_weight_path).exists():
@@ -57,6 +57,6 @@ def build_resnet50_binary(pretrained_weight_path: str | None = None) -> nn.Modul
         model.load_state_dict(state_dict, strict=False)
 
     in_features = model.fc.in_features
-    model.fc = nn.Linear(in_features, 1)
+    model.fc = nn.Linear(in_features, num_classes)
 
-    return model  # type: ignore[no-any-return]
+    return model
