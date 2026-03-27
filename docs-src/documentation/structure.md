@@ -2,7 +2,7 @@
 
 详细的项目代码组织说明。
 
-## 🏗️ 目录树
+## 目录树
 
 ```
 Psoriasis-Robust-Adv-Defense/
@@ -124,7 +124,7 @@ Psoriasis-Robust-Adv-Defense/
 └── main.py                              # 主入口（开发用）
 ```
 
-## 📦 模块说明
+## 模块说明
 
 ### src/psorad/cli.py
 
@@ -212,7 +212,7 @@ class SAMOOAttacker:
         """执行攻击，返回对抗样本和度量"""
 ```
 
-## 🔄 数据流向
+## 数据流向
 
 ```
 原始数据
@@ -238,7 +238,7 @@ class SAMOOAttacker:
 分析与评估
 ```
 
-## 🧪 测试层级
+## 测试层级
 
 ```
 tests/
@@ -249,11 +249,11 @@ tests/
 ```
 
 **测试范围**:
-- ✅ 单元测试 (Unit Test)
-- ✅ 集成测试 (Integration Test)
-- ⏳ 端到端测试 (E2E Test) - 待完善
+-  单元测试 (Unit Test)
+-  集成测试 (Integration Test)
+- 端到端测试 (E2E Test) - 待完善
 
-## 📊 配置文件
+## 配置文件
 
 ### pyproject.toml
 
@@ -282,7 +282,7 @@ export default defineConfig({
 })
 ```
 
-## 🔧 开发规范
+## 开发规范
 
 ### 代码组织原则
 
@@ -315,4 +315,4 @@ from psorad.models import load_resnet50
 
 ---
 
-**下一步**: 📚 [数据预处理](preprocessing.md) | 🎓 [模型训练](training.md)
+**下一步**: [数据预处理](preprocessing.md) | [模型训练](training.md)

@@ -2,7 +2,7 @@
 
 详细的模型训练文档。
 
-## 🎓 训练概览
+## 训练概览
 
 项目支持两种骨干网络的训练：
 
@@ -11,7 +11,7 @@
 | **ResNet50** | CNN | 速度快，稳定 | 5-10 min (GPU) |
 | **SigLIP** | Vision-Language | 0-shot，灵活 | 10-15 min (GPU) |
 
-## 🚀 训练流程
+## 训练流程
 
 ### ResNet50 微调
 
@@ -33,7 +33,7 @@ uv run main.py train \
     --freeze-siglip-backbone
 ```
 
-## 📊 输出和日志
+## 输出和日志
 
 见 [CLI 参考 - train](cli-reference.md#train)
 

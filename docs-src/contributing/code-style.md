@@ -2,7 +2,7 @@
 
 项目代码规范和编程指南。
 
-## 🎨 代码风格
+## 代码风格
 
 ### 工具
 
@@ -21,17 +21,17 @@ mypy src            # 类型检查
 pytest              # 测试
 ```
 
-## 📝 编码标准
+## 编码标准
 
 ### 类型注解
 
 ```python
-# ✅ 推荐
+# 推荐
 def load_image(path: str) -> torch.Tensor:
     """Load image from file path."""
     ...
 
-# ❌ 不推荐
+# 不推荐
 def load_image(path):
     """Load image from file path."""
     ...
@@ -59,7 +59,7 @@ def process_batch(
     ...
 ```
 
-## 🧪 测试编写
+## 测试编写
 
 ```python
 import pytest

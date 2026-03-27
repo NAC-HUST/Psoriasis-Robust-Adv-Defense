@@ -2,19 +2,19 @@
 
 感谢你对本项目的兴趣！本文档说明如何参与项目开发。
 
-## 🎯 贡献类型
+## 贡献类型
 
 我们欢迎以下类型的贡献：
 
 | 类型 | 示例 | 难度 |
 |------|------|------|
-| 🐛 **问题报告** | 发现 bug、报告错误 | ⭐ 简单 |
-| 📚 **文档改进** | 补充文档、改进示例 | ⭐ 简单 |
-| 🚀 **功能增强** | 新功能、性能优化 | ⭐⭐⭐ 困难 |
-| 🔧 **代码重构** | 改进代码质量、整理结构 | ⭐⭐ 中等 |
-| 🧪 **测试补充** | 增加单元测试、集成测试 | ⭐⭐ 中等 |
+| **问题报告** | 发现 bug、报告错误 |  简单 |
+| **文档改进** | 补充文档、改进示例 |  简单 |
+| **功能增强** | 新功能、性能优化 |  困难 |
+| **代码重构** | 改进代码质量、整理结构 |  中等 |
+| **测试补充** | 增加单元测试、集成测试 |  中等 |
 
-## 📋 开发前提
+## 开发前提
 
 - **技术要求**:
   - Python ≥ 3.12
@@ -26,9 +26,9 @@
   - Git 客户端
   - 虚拟环境管理工具（uv / conda）
 
-## 🚀 开发工作流
+## 开发工作流
 
-### 1️⃣ Fork 仓库
+### Fork 仓库
 
 在 GitHub 上 Fork 项目：
 
@@ -37,7 +37,7 @@
 # 点击 Fork 按钮
 ```
 
-### 2️⃣ 克隆本地
+### 克隆本地
 
 ```bash
 # 克隆你的 fork
@@ -48,7 +48,7 @@ cd Psoriasis-Robust-Adv-Defense
 git remote add upstream https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense.git
 ```
 
-### 3️⃣ 创建功能分支
+### 创建功能分支
 
 ```bash
 # 从 main 分支创建
@@ -63,7 +63,7 @@ git checkout -b fix/bug-description
 git checkout -b docs/doc-update
 ```
 
-### 4️⃣ 配置开发环境
+### 配置开发环境
 
 ```bash
 # 安装依赖（包括开发工具）
@@ -74,11 +74,11 @@ source .venv/bin/activate  # Linux/macOS
 .\.venv\Scripts\activate   # Windows
 ```
 
-### 5️⃣ 进行修改
+### 进行修改
 
 在本地进行代码修改和测试...
 
-### 6️⃣ 运行检查
+### 运行检查
 
 修改完成前，必须运行以下命令：
 
@@ -96,7 +96,7 @@ pytest
 ./scripts/check-all.sh  # 如果存在此脚本
 ```
 
-### 7️⃣ 提交更改
+### 提交更改
 
 遵循提交规范：
 
@@ -117,7 +117,7 @@ git commit -m "<type>: <description>"
 | `test:` | 测试相关 | `test: add unit tests for attack module` |
 | `chore:` | 构建或工具 | `chore: update dependencies` |
 
-### 8️⃣ 推送并创建 PR
+### 推送并创建 PR
 
 ```bash
 # 推送到你的 fork
@@ -127,7 +127,7 @@ git push origin feat/your-feature-name
 # 填写 PR 描述和相关信息
 ```
 
-## ✅ Pull Request 清单
+## Pull Request 清单
 
 提交 PR 时，请确保：
 
@@ -140,7 +140,7 @@ git push origin feat/your-feature-name
 - [ ] PR 描述清晰说明了修改内容
 - [ ] 合并冲突已解决
 
-## 📝 PR 描述模板
+## PR 描述模板
 
 ```markdown
 ## 修改描述
@@ -149,11 +149,11 @@ git push origin feat/your-feature-name
 
 ## 修改类型
 
-- [ ] 🐛 缺陷修复
-- [ ] ✨ 新功能
-- [ ] 📚 文档更新
-- [ ] ♻️ 代码重构
-- [ ] ⚡ 性能优化
+- [ ]  缺陷修复
+- [ ]  新功能
+- [ ]  文档更新
+- [ ] 代码重构
+- [ ]  性能优化
 
 ## 相关 Issue
 
@@ -182,7 +182,7 @@ uv run main.py train --backbone resnet50 --datadir cifar10
 如果有 UI 变化或结果输出，请附加截图。
 ```
 
-## 🔍 代码规范
+## 代码规范
 
 ### 代码风格
 
@@ -201,11 +201,11 @@ ruff check .
 添加类型提示以支持静态检查：
 
 ```python
-# ❌ 不推荐
+# 不推荐
 def preprocess_image(image, size):
     return image.resize(size)
 
-# ✅ 推荐
+# 推荐
 from PIL import Image
 
 def preprocess_image(image: Image.Image, size: tuple[int, int]) -> Image.Image:
@@ -268,7 +268,7 @@ from psorad.data import DataLoader
 from psorad.models import ResNet50Classifier
 ```
 
-## 🧪 测试指南
+## 测试指南
 
 ### 运行测试
 
@@ -318,7 +318,7 @@ class TestSAMOOAttacker:
         assert 0 <= metrics["sparsity"] <= 1
 ```
 
-## 📚 文档贡献
+## 文档贡献
 
 ### 修改文档
 
@@ -361,18 +361,18 @@ npm run docs:build
 
 ### 修改建议
 
-- ✅ 补充缺失的说明
-- ✅ 改进代码示例
-- ✅ 修正错别字或语法错误
-- ✅ 添加常见问题解答
-- ✅ 包含更多实际用例
+-  补充缺失的说明
+-  改进代码示例
+-  修正错别字或语法错误
+-  添加常见问题解答
+-  包含更多实际用例
 
-## 🏆 最佳实践
+## 最佳实践
 
 ### 提交信息
 
 ```bash
-# ✅ 好的提交信息：清晰、描述性
+# 好的提交信息：清晰、描述性
 git commit -m "feat: implement SAMOO attack with multi-objective optimization
 
 - Add population-based variant algorithm
@@ -380,7 +380,7 @@ git commit -m "feat: implement SAMOO attack with multi-objective optimization
 - Add comprehensive metrics computation
 - Update documentation with examples"
 
-# ❌ 不好的提交信息：模糊、无意义
+# 不好的提交信息：模糊、无意义
 git commit -m "fix: stuff"
 git commit -m "update"
 ```
@@ -388,12 +388,12 @@ git commit -m "update"
 ### 分支管理
 
 ```bash
-# ✅ 好的分支名：清晰、有意义
+# 好的分支名：清晰、有意义
 git checkout -b feat/sparse-adversarial-attack
 git checkout -b fix/cuda-memory-leak
 git checkout -b docs/add-architecture-diagram
 
-# ❌ 不好的分支名：模糊、无意义
+# 不好的分支名：模糊、无意义
 git checkout -b feature
 git checkout -b fix
 git checkout -b temp
@@ -403,35 +403,35 @@ git checkout -b temp
 
 参与复审时，请：
 
-- 💬 提出建设性意见
-- 🎯 指出具体问题
-- ✅ 建议改进方案
-- 🤝 保持友好、尊重的态度
+-  提出建设性意见
+-  指出具体问题
+-  建议改进方案
+-  保持友好、尊重的态度
 
-## 📞 沟通渠道
+## 沟通渠道
 
 - **Issues**: [GitHub Issues](https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense/issues) - 问题报告和讨论
 - **Discussions**: [GitHub Discussions](https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense/discussions) - 功能建议和一般讨论
 - **Email**: 通过 Issue 联系项目维护者
 
-## 🎓 行为准则
+## 行为准则
 
 本项目采用 [Contributor Covenant](https://www.contributor-covenant.org/) 行为准则。参与者应该：
 
-- ✅ 尊重并欢迎多样性
-- ✅ 使用包容性语言
-- ✅ 接受建设性批评
-- ✅ 专注于对项目最好的内容
+-  尊重并欢迎多样性
+-  使用包容性语言
+-  接受建设性批评
+-  专注于对项目最好的内容
 
 不能容忍：
 
-- ❌ 骚扰、歧视、骚扰性语言
-- ❌ 人身攻击
-- ❌ 发布他人私人信息
+-  骚扰、歧视、骚扰性语言
+-  人身攻击
+-  发布他人私人信息
 
 严重违反行为准则的贡献者将被移除项目。
 
-## 🎉 致谢
+## 致谢
 
 非常感谢所有贡献者！你们的工作使这个项目更好。
 

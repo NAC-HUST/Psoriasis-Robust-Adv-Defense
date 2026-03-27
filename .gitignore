@@ -220,3 +220,4 @@ tools/
 src/
 tests/
 check_quality.py
+docs-src/.vitepress/cache/

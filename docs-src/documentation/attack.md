@@ -2,11 +2,11 @@
 
 详细的对抗攻击文档。
 
-## ⚔️ 攻击概览
+## 攻击概览
 
 本项目实现了 **SAMOO**(Sparse Multi-Objective Optimization Attack) 算法。
 
-## 🎯 攻击类型
+## 攻击类型
 
 ### 无目标攻击 (Untargeted)
 
@@ -32,7 +32,7 @@ uv run main.py attack \
     --target-class 1
 ```
 
-## 📊 输出和结果
+## 输出和结果
 
 见 [CLI 参考 - attack](cli-reference.md#attack)
 

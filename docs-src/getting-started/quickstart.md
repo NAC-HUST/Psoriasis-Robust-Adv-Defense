@@ -1,12 +1,12 @@
 # 快速开始
 
-⏱️ **预计时间**: 5-10 分钟
+ **预计时间**: 5-10 分钟
 
-## 🎯 5分钟快速体验
+## 5分钟快速体验
 
 假设已完成 [安装指南](installation.md)，按以下步骤快速体验：
 
-### 步骤 1️⃣ 激活环境
+### 步骤  激活环境
 
 ```bash
 # 进入项目目录
@@ -17,7 +17,7 @@ source .venv/bin/activate  # Linux/macOS
 .\.venv\Scripts\activate   # Windows PowerShell
 ```
 
-### 步骤 2️⃣ 准备数据
+### 步骤  准备数据
 
 如果已有数据集，将其放在 `dataset/raw_data/<datadir>/` 目录，目录结构如下：
 
@@ -42,9 +42,9 @@ uv run main.py preprocess \
     --image-size 224
 ```
 
-✅ **输出**: `dataset/processed_data/psoriasis_normal/`
+ **输出**: `dataset/processed_data/psoriasis_normal/`
 
-### 步骤 3️⃣ 下载预训练模型
+### 步骤  下载预训练模型
 
 ```bash
 uv run main.py download-models
@@ -61,9 +61,9 @@ uv run main.py download-models
 ```
 :::
 
-✅ **输出**: `model/pretrained_model/`
+ **输出**: `model/pretrained_model/`
 
-### 步骤 4️⃣ 训练分类器
+### 步骤  训练分类器
 
 ::: code-group
 
@@ -90,9 +90,9 @@ uv run main.py train \
 
 ResNet50 预计 5-10 分钟（GPU）；SigLIP 预计 10-15 分钟（GPU）。
 
-✅ **输出**: `model/trained_classifier/<backbone>/best_classifier.pt`
+ **输出**: `model/trained_classifier/<backbone>/best_classifier.pt`
 
-### 步骤 5️⃣ 执行对抗攻击
+### 步骤  执行对抗攻击
 
 ```bash
 uv run main.py attack \
@@ -102,9 +102,9 @@ uv run main.py attack \
     --sample-index 0
 ```
 
-✅ **输出**: `output/attack/resnet50/`
+ **输出**: `output/attack/resnet50/`
 
-## 📊 理解输出结果
+## 理解输出结果
 
 运行完对抗攻击后，输出目录结构如下：
 
@@ -137,7 +137,7 @@ $$\text{稀疏性} = \frac{\text{修改像素数}}{H \times W \times C} \times 1
 修改的平均幅度，用 $\ell_2$ 范数或 $\ell_\infty$ 范数衡量。
 :::
 
-## 🔧 常见命令参考
+## 常见命令参考
 
 ### 查看所有命令
 
@@ -183,7 +183,7 @@ for i in {0..9}; do
 done
 ```
 
-## 📚 完整参数说明
+## 完整参数说明
 
 ### preprocess 参数
 
@@ -217,7 +217,7 @@ done
 
 详见 [CLI 参考](../documentation/cli-reference.md)
 
-## 🧪 运行示例
+## 运行示例
 
 ### 示例 1: 完整工作流（已有数据）
 
@@ -274,7 +274,7 @@ uv run main.py attack --backbone siglip --datadir imagenette
 echo "Results saved in output/attack/"
 ```
 
-## 🐛 快速故障排查
+## 快速故障排查
 
 | 问题 | 解决方案 |
 |------|--------|
@@ -284,14 +284,14 @@ echo "Results saved in output/attack/"
 | 下载超时 | 设置 `export HF_ENDPOINT=https://hf-mirror.com` |
 | GPU 未检测到 | 运行 `nvidia-smi` 检查驱动 |
 
-## 📖 后续阅读
+## 后续阅读
 
-- 📚 [完整 CLI 参考](../documentation/cli-reference.md)
-- 🔬 [技术方案详解](../research/methodology.md)
-- 🤝 [贡献指南](../contributing/guide.md)
+-  [完整 CLI 参考](../documentation/cli-reference.md)
+-  [技术方案详解](../research/methodology.md)
+-  [贡献指南](../contributing/guide.md)
 
 ---
 
-❓ **有问题？** 检查 [安装指南](installation.md) 或 [提交 Issue](https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense/issues)
+**有问题？** 检查 [安装指南](installation.md) 或 [提交 Issue](https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense/issues)
 
-✅ **准备好了？** 开始体验吧！
+ **准备好了？** 开始体验吧！

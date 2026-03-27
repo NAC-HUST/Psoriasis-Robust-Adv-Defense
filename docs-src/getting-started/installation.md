@@ -1,6 +1,6 @@
 # 安装指南
 
-## 📋 系统要求
+## 系统要求
 
 ### 硬件要求
 
@@ -22,11 +22,11 @@
 
 ### 操作系统
 
-- ✅ Linux (Ubuntu 20.04 LTS 或更新)
-- ✅ Windows (WSL2 推荐)
-- ✅ macOS (M1/M2 可用，但 GPU 支持有限)
+-  Linux (Ubuntu 20.04 LTS 或更新)
+-  Windows (WSL2 推荐)
+-  macOS (M1/M2 可用，但 GPU 支持有限)
 
-## 🚀 快速安装（推荐）
+## 快速安装（推荐）
 
 ### 1. 克隆仓库
 
@@ -67,10 +67,10 @@ uv sync
 ```
 
 这个命令会：
-- 🔍 检查 Python 版本
-- 📦 安装所有依赖包
-- 🐍 创建虚拟环境（如果需要）
-- ✅ 设置 PyTorch CUDA 索引
+-  检查 Python 版本
+-  安装所有依赖包
+-  创建虚拟环境（如果需要）
+-  设置 PyTorch CUDA 索引
 
 ### 3. 验证安装
 
@@ -88,7 +88,7 @@ python -c "import torch; print(f'PyTorch: {torch.__version__}')"
 python -c "import transformers; print(f'Transformers: {transformers.__version__}')"
 ```
 
-## 📦 手动安装（备选）
+## 手动安装（备选）
 
 如果要使用 pip 或 conda，可以手动安装：
 
@@ -126,7 +126,7 @@ conda install transformers numpy pandas pillow scipy huggingface-hub tqdm
 pip install -e .
 ```
 
-## 🐕 GPU 支持配置
+## GPU 支持配置
 
 ### NVIDIA GPU (推荐)
 
@@ -161,7 +161,7 @@ python -c "import torch; print(f'GPU: {torch.cuda.get_device_name(0)}')"
 python -c "import torch; print(torch.backends.mps.is_available())"
 ```
 
-## 🛠️ 开发环境配置
+## 开发环境配置
 
 ### IDE 推荐
 
@@ -205,43 +205,43 @@ mypy src        # 类型检查
 pytest          # 单元测试
 ```
 
-## ✅ 安装检查清单
+## 安装检查清单
 
 运行以下脚本验证完整安装：
 
 ```bash
 #!/bin/bash
 
-echo "🔍 安装检查清单"
+echo " 安装检查清单"
 echo "=================="
 
 # 检查 Python
-echo -n "✓ Python 版本: "
+echo -n "Python 版本: "
 python --version
 
 # 检查 PyTorch
-echo -n "✓ PyTorch: "
+echo -n "PyTorch: "
 python -c "import torch; print(torch.__version__)"
 
 # 检查 Transformers
-echo -n "✓ Transformers: "
+echo -n "Transformers: "
 python -c "import transformers; print(transformers.__version__)"
 
 # 检查 CUDA
-echo -n "✓ CUDA 可用: "
+echo -n "CUDA 可用: "
 python -c "import torch; print(torch.cuda.is_available())"
 
 # 检查 GPU (如有)
 if python -c "import torch; exit(0 if torch.cuda.is_available() else 1)"; then
-    echo -n "✓ GPU: "
+    echo -n "GPU: "
     python -c "import torch; print(torch.cuda.get_device_name(0))"
 fi
 
 echo "=================="
-echo "✅ 安装检查完成！"
+echo " 安装检查完成！"
 ```
 
-## 🔧 常见问题
+## 常见问题
 
 ### Q: ModuleNotFoundError: No module named 'torch'
 
@@ -275,15 +275,15 @@ export HF_ENDPOINT=https://hf-mirror.com
 uv run main.py download-models
 ```
 
-## 📚 后续步骤
+## 后续步骤
 
 安装完成后，请按以下顺序操作：
 
-1. 📖 阅读 [快速开始](quickstart.md) 了解基本用法
-2. 🔧 按 [快速开始](quickstart.md) 运行 demo
-3. 📚 查看 [文档](../documentation/cli-reference.md) 了解详细参数
-4. 🧪 运行单元测试: `uv run pytest`
+1.  阅读 [快速开始](quickstart.md) 了解基本用法
+2.  按 [快速开始](quickstart.md) 运行 demo
+3.  查看 [文档](../documentation/cli-reference.md) 了解详细参数
+4.  运行单元测试: `uv run pytest`
 
 ---
 
-💬 **遇到问题?** 请 [提交 Issue](https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense/issues)
+ **遇到问题?** 请 [提交 Issue](https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense/issues)

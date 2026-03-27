@@ -2,7 +2,7 @@
 
 详细的数据预处理文档。
 
-## 🎯 预处理流程
+## 预处理流程
 
 数据预处理是整个管道中的第一步。
 
@@ -42,7 +42,7 @@ dataset/processed_data/<datadir>/
 └── class_manifest.csv
 ```
 
-## 📊 Manifest 文件
+## Manifest 文件
 
 `class_manifest.csv` 记录数据集元信息：
 
@@ -51,7 +51,7 @@ dataset/processed_data/<datadir>/
 | 0 | normal | 150 |
 | 1 | psoriasis | 120 |
 
-## 🔧 自定义参数
+## 自定义参数
 
 见 [CLI 参考 - preprocess](cli-reference.md#preprocess)
 

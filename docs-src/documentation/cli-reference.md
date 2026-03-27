@@ -18,14 +18,14 @@ psorad [COMMAND] [OPTIONS]
 
 | 命令 | 说明 | 优先级 |
 |------|------|--------|
-| `preprocess` | 数据预处理 | ⭐ 必需 |
-| `download-models` | 下载预训练模型 | ⭐ 必需 |
-| `train` | 训练分类器 | ⭐ 必需 |
-| `attack` | 执行对抗攻击 | ⭐ 必需 |
+| `preprocess` | 数据预处理 |  必需 |
+| `download-models` | 下载预训练模型 |  必需 |
+| `train` | 训练分类器 |  必需 |
+| `attack` | 执行对抗攻击 |  必需 |
 
 ---
 
-## 📥 preprocess
+## preprocess
 
 数据预处理和规范化。
 
@@ -85,7 +85,7 @@ dataset/processed_data/<datadir>/
 
 ---
 
-## 📦 download-models
+## download-models
 
 下载预训练模型。
 
@@ -144,7 +144,7 @@ uv run main.py download-models
 
 ---
 
-## 🎓 train
+## train
 
 训练分类器。
 
@@ -259,7 +259,7 @@ uv run main.py train \
 
 ---
 
-## ⚔️ attack
+## attack
 
 执行对抗攻击（SAMOO）。
 
@@ -394,7 +394,7 @@ output/attack/resnet50/
 
 ---
 
-## 🔍 调试选项
+## 调试选项
 
 所有命令都支持以下调试选项：
 
@@ -405,7 +405,7 @@ uv run main.py [COMMAND] --seed 42    # 固定随机种子
 
 ---
 
-## 📊 性能优化建议
+## 性能优化建议
 
 ### GPU 加速
 
@@ -443,7 +443,7 @@ uv run main.py train --batch-size 8 --gradient-accumulation-steps 4
 
 ---
 
-## 🆘 常见错误排查
+## 常见错误排查
 
 | 错误 | 原因 | 解决方案 |
 |------|------|---------|
@@ -454,7 +454,7 @@ uv run main.py train --batch-size 8 --gradient-accumulation-steps 4
 
 ---
 
-## 📚 完整参考链接
+## 完整参考链接
 
 - [安装指南](../getting-started/installation.md)
 - [快速开始](../getting-started/quickstart.md)

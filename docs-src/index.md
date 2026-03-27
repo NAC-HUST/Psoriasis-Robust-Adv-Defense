@@ -1,4 +1,36 @@
-# 🏥 Psoriasis Robust Adv&Defense
+---
+layout: home
+
+hero:
+  name: "Psoriasis Robust Adv&Defense"
+  text: "银屑病医学影像对抗鲁棒性研究"
+  tagline: "数据预处理、模型训练与对抗攻击的一体化研究框架。"
+  image:
+    src: "https://vitepress.dev/vitepress-logo-large.webp"
+    alt: "PsoraDefense Docs"
+  actions:
+    - theme: brand
+      text: "快速开始"
+      link: "/getting-started/quickstart"
+    - theme: alt
+      text: "方法说明"
+      link: "/research/methodology"
+    - theme: alt
+      text: "GitHub"
+      link: "https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense"
+
+features:
+  - title: "研究导向"
+    details: "聚焦医学影像模型在对抗场景下的稳健性分析与改进。"
+  - title: "可复现实验"
+    details: "统一命令入口覆盖数据、训练、攻击与结果导出。"
+  - title: "双模型路线"
+    details: "支持 ResNet50 与 SigLIP，便于横向对比与迭代。"
+  - title: "发布规范"
+    details: "docs-src 维护源码，docs 保存静态产物用于 Pages 发布。"
+---
+
+# Psoriasis Robust Adv&Defense
 
 > 银屑病医学影像诊断的对抗攻防协同鲁棒性增强方法研究
 
@@ -7,7 +39,7 @@
 [![University](https://img.shields.io/badge/university-HUST-red)](https://www.hust.edu.cn/)
 [![Python](https://img.shields.io/badge/python-3.12%2B-blue)](https://www.python.org/)
 
-## 🎯 项目概览
+## 项目概览
 
 本项目致力于研究**对抗攻击**对医学影像分类模型的影响，并提出系统的**防御机制**，以提高银屑病诊断的鲁棒性和可信度。
 
@@ -18,39 +50,14 @@
 - **医学应用**: 专注银屑病医学影像的可靠诊断
 - **鲁棒性增强**: 开发防御策略提升模型对对抗样本的抵抗力
 
-## ✨ 主要特性
+## 关键能力
 
-::: details 🚀 端到端流程
-从数据预处理、模型下载，到训练分类器，再到对抗攻击，**一键完成全流程**。
+- 端到端流程：预处理、训练、攻击、评估
+- 双模型支持：ResNet50 与 SigLIP
+- 多数据集实验：CIFAR-10、ImageNette、银屑病数据
+- 手动发布：本地构建后提交 `doc` 分支 `docs/`
 
-```bash
-uv run main.py preprocess --datadir psoriasis_normal
-uv run main.py download-models
-uv run main.py train --backbone resnet50 --epochs 3
-uv run main.py attack --backbone resnet50
-```
-:::
-
-::: details 🤖 多架构支持
-灵活支持 **ResNet50** 与 **SigLIP** 骨干网络，可任意组合训练和攻击。
-
-- ResNet50: CNNs，快速高效
-- SigLIP: Vision-Language，0-shot 能力
-:::
-
-::: details 📊 完整数据集
-支持 **CIFAR-10**、**ImageNette**、**银屑病患者数据**，提供自动预处理管道。
-
-- 等比缩放 + 中心裁剪
-- 统一 224×224 分辨率
-- 自动类别识别
-:::
-
-::: details 🎓 学术输出
-推进医学影像诊断的对抗鲁棒性研究，支持学术发表和开源贡献。
-:::
-
-## 🏗️ 项目架构
+## 项目架构
 
 ```
 Psoriasis-Robust-Adv-Defense/
@@ -71,17 +78,17 @@ Psoriasis-Robust-Adv-Defense/
 └── tests/                   # 单元测试
 ```
 
-## 📖 快速导航
+## 快速导航
 
 | 文档 | 描述 |
 |------|------|
-| [👋 安装指南](getting-started/installation.md) | 环境配置和依赖安装 |
-| [⚡ 快速开始](getting-started/quickstart.md) | 5分钟快速上手 |
-| [📚 API 参考](documentation/cli-reference.md) | 完整命令行参考 |
-| [🔬 技术方案](research/methodology.md) | 研究方法与算法详解 |
-| [🤝 贡献指南](contributing/guide.md) | 参与开发与贡献 |
+| [安装指南](getting-started/installation.md) | 环境配置和依赖安装 |
+| [快速开始](getting-started/quickstart.md) | 快速上手 |
+| [CLI 参考](documentation/cli-reference.md) | 命令行参数与示例 |
+| [技术方案](research/methodology.md) | 方法与评估指标 |
+| [贡献指南](contributing/guide.md) | 协作规范与提交流程 |
 
-## 🛠️ 技术栈
+## 技术栈
 
 | 组件 | 用途 | 版本 |
 |------|------|------|
@@ -92,7 +99,7 @@ Psoriasis-Robust-Adv-Defense/
 | **Pandas** | 数据处理 | ≥3.0.1 |
 | **Pillow** | 图像处理 | ≥12.1.1 |
 
-## 🚀 立即开始
+## 立即开始
 
 ### 安装（推荐使用 uv）
 
@@ -129,9 +136,9 @@ uv run main.py attack \
     --datadir psoriasis_normal
 ```
 
-👉 **更多详情** 请参考 [快速开始指南](getting-started/quickstart.md)
+更多详情见 [快速开始指南](getting-started/quickstart.md)
 
-## 📚 学术信息
+## 学术信息
 
 ### 研究成果
 
@@ -141,7 +148,7 @@ uv run main.py attack \
 
 **机构**: 华中科技大学 (HUST)
 
-## 🤝 参与贡献
+## 参与贡献
 
 欢迎提交 Issue 和 Pull Request！请参考 [贡献指南](contributing/guide.md) 了解详情。
 
@@ -155,11 +162,11 @@ mypy src              # 类型检查
 pytest                # 单元测试
 ```
 
-## 📄 许可证
+## 许可证
 
 本项目采用 [GPLv3](https://www.gnu.org/licenses/gpl-3.0.html) 开源许可证。
 
-## 📧 联系方式
+## 联系方式
 
 - **GitHub Issues**: [报告问题或建议](https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense/issues)
 - **机构**: 华中科技大学 (HUST)
@@ -169,8 +176,6 @@ pytest                # 单元测试
 
 <div align="center">
 
-**Made with ❤️ by HUST Researchers**
-
-⭐ 如果有帮助，请给我们一个 Star ~
+Maintained by HUST Researchers
 
 </div>

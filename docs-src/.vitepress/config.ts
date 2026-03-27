@@ -36,7 +36,7 @@ export default defineConfig({
     ],
     sidebar: [
       {
-        text: '👋 入门',
+        text: '入门',
         items: [
           { text: '项目概览', link: '/getting-started/overview' },
           { text: '安装指南', link: '/getting-started/installation' },
@@ -44,7 +44,7 @@ export default defineConfig({
         ]
       },
       {
-        text: '📚 文档',
+        text: '文档',
         items: [
           { text: '项目结构', link: '/documentation/structure' },
           { text: '数据预处理', link: '/documentation/preprocessing' },
@@ -54,7 +54,7 @@ export default defineConfig({
         ]
       },
       {
-        text: '🔬 研究',
+        text: '研究',
         items: [
           { text: '技术方案', link: '/research/methodology' },
           { text: '算法详解', link: '/research/algorithm' },
@@ -62,7 +62,7 @@ export default defineConfig({
         ]
       },
       {
-        text: '🤝 贡献',
+        text: '贡献',
         items: [
           { text: '贡献指南', link: '/contributing/guide' },
           { text: '代码规范', link: '/contributing/code-style' },
@@ -70,7 +70,7 @@ export default defineConfig({
         ]
       },
       {
-        text: '📄 其他',
+        text: '其他',
         items: [{ text: '许可证', link: '/license' }]
       }
     ],

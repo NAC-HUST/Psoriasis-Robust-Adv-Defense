@@ -1,55 +1,6 @@
-# Psoriasis Robust Adv&Defense
+# Psoriasis Robust Adv&Defense Doc
 
-面向银屑病医学影像诊断的对抗攻防协同鲁棒性增强方法研究。
-
-## 项目概览
-
-本项目当前支持以下核心流程：
-
-1. 数据预处理（统一尺寸、生成 `class_manifest.csv`）
-2. 预训练模型下载（ResNet50 / SigLIP）
-3. 分类器训练（ResNet50 / SigLIP）
-4. SAMOO 对抗攻击与结果导出
-5. 文档站点（VitePress）手动构建并通过 `doc` 分支 `/docs` 发布
-
-## 目录说明
-
-- `src/`：核心代码
-- `dataset/`：数据集目录
-- `model/`：预训练与训练后模型
-- `output/`：攻击与实验输出
-- `docs-src/`：文档源码（VitePress）
-- `docs/`：文档静态产物（GitHub Pages 发布目录）
-
-## 环境准备（Python / uv）
-
-要求：Python >= 3.12
-
-```bash
-# 安装 Python 依赖
-uv sync
-
-# 激活虚拟环境
-source .venv/bin/activate
-```
-
-## 常用项目命令
-
-```bash
-# 预处理
-uv run main.py preprocess --datadir psoriasis_normal
-
-# 下载模型
-uv run main.py download-models
-
-# 训练
-uv run main.py train --backbone resnet50 --datadir psoriasis_normal
-
-# 攻击
-uv run main.py attack --backbone resnet50 --datadir psoriasis_normal
-```
-
----
+面向银屑病医学影像诊断的对抗攻防协同鲁棒性增强方法研究的文档部分。
 
 ## 文档维护与发布（重点）
 
