@@ -82,7 +82,7 @@ Psoriasis-Robust-Adv-Defense/
 │   └── defence/                         # 防御结果（扩展）
 │       └── ...
 │
-├── docs/                                # 文档（本网站）
+├── docs-src/                            # 文档源码（VitePress）
 │   ├── .vitepress/
 │   │   ├── config.ts
 │   │   └── theme/
@@ -91,6 +91,10 @@ Psoriasis-Robust-Adv-Defense/
 │   ├── documentation/
 │   ├── research/
 │   └── contributing/
+├── docs/                                # 文档构建产物（GitHub Pages 发布目录）
+│   ├── index.html
+│   ├── assets/
+│   └── .nojekyll
 │
 ├── tests/                               # 单元测试
 │   ├── __init__.py
@@ -265,7 +269,7 @@ requires-python = ">=3.12"
 psorad = "psorad.cli:main"  # 定义 CLI 入口
 ```
 
-### docs/.vitepress/config.ts
+### docs-src/.vitepress/config.ts
 
 文档网站配置：
 

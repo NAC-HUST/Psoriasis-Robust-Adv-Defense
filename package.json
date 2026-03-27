@@ -1,14 +1,16 @@
 {
   "name": "psoriasis-robust-adv-defense-docs",
   "private": true,
+  "type": "module",
   "version": "0.1.0",
   "description": "VitePress docs for Psoriasis-Robust-Adv-Defense",
   "scripts": {
-    "docs:dev": "vitepress dev docs --host",
-    "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:dev": "vitepress dev docs-src --host",
+    "docs:build": "rm -rf docs/* && vitepress build docs-src --outDir docs && touch docs/.nojekyll",
+    "docs:preview": "vitepress preview docs --host"
   },
   "devDependencies": {
+    "markdown-it-mathjax3": "^4.3.2",
     "vitepress": "^1.6.3",
     "vue": "^3.5.13"
   }

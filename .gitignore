@@ -153,8 +153,6 @@ venv.bak/
 
 # docs build output
 /site
-/docs/.vitepress/cache
-/docs/.vitepress/dist
 
 # node
 /node_modules

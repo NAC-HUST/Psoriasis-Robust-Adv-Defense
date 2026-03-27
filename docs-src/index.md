@@ -1,27 +1,3 @@
----
-layout: home
-
-hero:
-    name: "Psoriasis Robust Adv&Defense"
-    text: "银屑病医学影像的对抗鲁棒性研究"
-    tagline: "基于 SAMOO 的攻防协同框架，支持 ResNet50 与 SigLIP 的统一评估与训练。"
-    actions:
-        - theme: brand
-            text: 快速开始
-            link: /getting-started/quickstart
-        - theme: alt
-            text: GitHub
-            link: https://github.com/NAC-HUST/Psoriasis-Robust-Adv-Defense
-
-features:
-    - title: 端到端闭环
-        details: 从数据预处理、模型下载到分类训练与对抗攻击，形成完整实验链路。
-    - title: 多模型统一接口
-        details: 同时支持 ResNet50 与 SigLIP，在同一 CLI 下完成训练和攻击对比。
-    - title: 医学场景导向
-        details: 面向银屑病影像诊断鲁棒性问题，强调可复现和工程可落地。
----
-
 # 🏥 Psoriasis Robust Adv&Defense
 
 > 银屑病医学影像诊断的对抗攻防协同鲁棒性增强方法研究
@@ -90,7 +66,8 @@ Psoriasis-Robust-Adv-Defense/
 ├── model/                   # 模型存储
 │   ├── pretrained_model/    # 预训练模型
 │   └── trained_classifier/  # 训练好的分类器
-├── docs/                    # 文档（本网站）
+├── docs-src/                # 文档源码（VitePress）
+├── docs/                    # 文档发布目录（静态产物）
 └── tests/                   # 单元测试
 ```
 

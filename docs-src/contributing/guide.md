@@ -322,10 +322,10 @@ class TestSAMOOAttacker:
 
 ### 修改文档
 
-项目文档使用 VitePress，位于 `docs/` 目录：
+项目文档使用 VitePress：`docs-src/` 存放源码，`docs/` 存放构建产物（GitHub Pages 发布目录）。
 
 ```
-docs/
+docs-src/
 ├── .vitepress/
 │   ├── config.ts
 │   └── theme/
@@ -337,6 +337,9 @@ docs/
 ├── documentation/
 ├── research/
 └── contributing/
+
+docs/
+└── index.html ...            # npm run docs:build 后生成
 ```
 
 ### 本地预览
@@ -349,6 +352,11 @@ npm install
 npm run docs:dev
 
 # 访问 http://localhost:8000
+```
+
+```bash
+# 手动构建到发布目录（doc 分支的 /docs）
+npm run docs:build
 ```
 
 ### 修改建议
