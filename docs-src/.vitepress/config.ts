@@ -50,6 +50,7 @@ export default defineConfig({
           { text: '数据预处理', link: '/documentation/preprocessing' },
           { text: '模型训练', link: '/documentation/training' },
           { text: '对抗攻击', link: '/documentation/attack' },
+          { text: '攻击优化总结', link: '/documentation/attack-optimization-summary' },
           { text: 'CLI 参考', link: '/documentation/cli-reference' }
         ]
       },

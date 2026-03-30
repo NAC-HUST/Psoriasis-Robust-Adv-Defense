@@ -36,6 +36,12 @@ uv run main.py attack \
 
 见 [CLI 参考 - attack](cli-reference.md#attack)
 
+## 本轮优化记录
+
+本轮对 `src/psorad` 主实现的攻击优化与工程质量改进详见：
+
+- [SAMOO 攻击优化总结](attack-optimization-summary.md)
+
 ---
 
 完整攻击文档待补充...
