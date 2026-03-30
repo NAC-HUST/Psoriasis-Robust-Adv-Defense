@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import json
+import math
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -22,12 +23,137 @@ def _safe_path_token(value: str) -> str:
     return token or "unknown"
 
 
-def _resolve_eps(eps: int | None, height: int, width: int) -> tuple[int, bool]:
+def _resolution_profile(height: int, width: int) -> dict[str, float | int]:
     total_pixels = int(height * width)
-    if eps is None:
-        adaptive = max(128, int(total_pixels * 0.02))
-        return min(adaptive, total_pixels), True
-    return min(int(eps), total_pixels), False
+    small_resolution_threshold = 64 * 64
+
+    if total_pixels <= small_resolution_threshold:
+        return {
+            "eps_ratio": 0.024,
+            "iterations": 500,
+            "pc": 0.1,
+            "pm": 0.4,
+            "pm_end": 0.1,
+            "pop_size": 2,
+            "query_budget": 1000,
+            "zero_probability": 0.3,
+            "p_size": 2.0,
+            "tournament_size": 2,
+        }
+
+    return {
+        "eps_ratio": 0.0023,
+        "iterations": 2500,
+        "pc": 0.1,
+        "pm": 0.4,
+        "pm_end": 0.1,
+        "pop_size": 2,
+        "query_budget": 5000,
+        "zero_probability": 0.3,
+        "p_size": 2.0,
+        "tournament_size": 2,
+    }
+
+
+def _resolve_attack_hparams(
+    *,
+    height: int,
+    width: int,
+    eps: int | None,
+    iterations: int | None,
+    pc: float | None,
+    pm: float | None,
+    pm_end: float | None,
+    pop_size: int | None,
+    query_budget: int | None,
+    zero_probability: float | None,
+    p_size: float | None,
+    tournament_size: int | None,
+) -> dict[str, Any]:
+    profile = _resolution_profile(height=height, width=width)
+    total_pixels = int(height * width)
+
+    profile_eps = max(1, min(int(round(float(profile["eps_ratio"]) * total_pixels)), total_pixels))
+    resolved_eps = min(int(eps), total_pixels) if eps is not None else profile_eps
+    eps_is_adaptive = eps is None
+
+    resolved_pop_size = int(pop_size) if pop_size is not None else int(profile["pop_size"])
+    resolved_query_budget = int(query_budget) if query_budget is not None else int(profile["query_budget"])
+
+    if iterations is not None:
+        resolved_iterations = int(iterations)
+    elif resolved_query_budget > 0:
+        resolved_iterations = max(2, int(math.ceil(resolved_query_budget / float(resolved_pop_size))))
+    else:
+        resolved_iterations = int(profile["iterations"])
+
+    return {
+        "eps": resolved_eps,
+        "eps_is_adaptive": eps_is_adaptive,
+        "iterations": resolved_iterations,
+        "pc": float(pc) if pc is not None else float(profile["pc"]),
+        "pm": float(pm) if pm is not None else float(profile["pm"]),
+        "pm_end": float(pm_end) if pm_end is not None else float(profile["pm_end"]),
+        "pop_size": resolved_pop_size,
+        "query_budget": resolved_query_budget,
+        "zero_probability": float(zero_probability) if zero_probability is not None else float(profile["zero_probability"]),
+        "p_size": float(p_size) if p_size is not None else float(profile["p_size"]),
+        "tournament_size": int(tournament_size) if tournament_size is not None else int(profile["tournament_size"]),
+        "resolution_profile": "small" if total_pixels <= 64 * 64 else "large",
+    }
+
+
+def _apply_confidence_boost(
+    *,
+    hparams: dict[str, Any],
+    probs_before: np.ndarray,
+    true_label: int,
+    image_height: int,
+    image_width: int,
+    eps_user_provided: bool,
+    iterations_user_provided: bool,
+    pop_size_user_provided: bool,
+    query_budget_user_provided: bool,
+) -> tuple[dict[str, Any], bool, str]:
+    boosted = dict(hparams)
+
+    if str(boosted.get("resolution_profile")) != "large":
+        return boosted, False, "resolution=small"
+    if probs_before.size == 0 or true_label < 0 or true_label >= probs_before.size:
+        return boosted, False, "invalid_probability_vector"
+
+    true_conf = float(probs_before[true_label])
+    total_pixels = int(image_height * image_width)
+
+    if true_conf >= 0.9999:
+        target_eps_ratio = 0.010
+        target_query_budget = 12000
+        target_pop_size = 4
+        reason = "very_high_confidence"
+    elif true_conf >= 0.995:
+        target_eps_ratio = 0.006
+        target_query_budget = 8000
+        target_pop_size = 4
+        reason = "high_confidence"
+    else:
+        return boosted, False, "confidence_not_high"
+
+    if not eps_user_provided:
+        target_eps = max(1, min(int(round(target_eps_ratio * total_pixels)), total_pixels))
+        boosted["eps"] = max(int(boosted["eps"]), target_eps)
+
+    if not pop_size_user_provided:
+        boosted["pop_size"] = max(int(boosted["pop_size"]), int(target_pop_size))
+
+    if not query_budget_user_provided:
+        boosted["query_budget"] = max(int(boosted["query_budget"]), int(target_query_budget))
+
+    if not iterations_user_provided:
+        pop_size = max(1, int(boosted["pop_size"]))
+        query_budget = max(1, int(boosted["query_budget"]))
+        boosted["iterations"] = max(2, int(math.ceil(query_budget / float(pop_size))))
+
+    return boosted, True, reason
 
 
 class BinaryModelAdapter:
@@ -98,7 +224,7 @@ class BinaryModelAdapter:
 
 def _to_uint8_image(img: np.ndarray) -> np.ndarray:
     clipped = np.clip(img, 0.0, 1.0)
-    return (clipped * 255.0).round().astype(np.uint8)
+    return cast(np.ndarray, (clipped * 255.0).round().astype(np.uint8))
 
 
 def _build_comparison_image(before: np.ndarray, after: np.ndarray) -> Image.Image:
@@ -338,15 +464,17 @@ def run_samoo_attack(
     export_dir: str | None = None,
     keep_raw_npy: bool = True,
     eps: int | None = None,
-    iterations: int = 400,
-    pc: float = 0.3,
-    pm: float = 0.6,
-    pop_size: int = 12,
-    zero_probability: float = 0.2,
+    iterations: int | None = None,
+    pc: float | None = None,
+    pm: float | None = None,
+    pm_end: float | None = None,
+    pop_size: int | None = None,
+    query_budget: int | None = None,
+    zero_probability: float | None = None,
     include_dist: bool = False,
     max_dist: float = 1e9,
-    p_size: float = 0.25,
-    tournament_size: int = 2,
+    p_size: float | None = None,
+    tournament_size: int | None = None,
     seed: int = 42,
 ) -> Path:
     np.random.seed(seed)
@@ -361,7 +489,42 @@ def run_samoo_attack(
         sample_index=sample_index,
         image_size=image_size,
     )
-    resolved_eps, eps_is_adaptive = _resolve_eps(eps=eps, height=int(x.shape[0]), width=int(x.shape[1]))
+
+    eps_user_provided = eps is not None
+    iterations_user_provided = iterations is not None
+    pop_size_user_provided = pop_size is not None
+    query_budget_user_provided = query_budget is not None
+
+    probs_before = adapter.predict_proba(x)
+    pred_before = int(np.argmax(probs_before))
+
+    resolved_hparams = _resolve_attack_hparams(
+        height=int(x.shape[0]),
+        width=int(x.shape[1]),
+        eps=eps,
+        iterations=iterations,
+        pc=pc,
+        pm=pm,
+        pm_end=pm_end,
+        pop_size=pop_size,
+        query_budget=query_budget,
+        zero_probability=zero_probability,
+        p_size=p_size,
+        tournament_size=tournament_size,
+    )
+    resolved_hparams, boost_applied, boost_reason = _apply_confidence_boost(
+        hparams=resolved_hparams,
+        probs_before=probs_before,
+        true_label=y_true,
+        image_height=int(x.shape[0]),
+        image_width=int(x.shape[1]),
+        eps_user_provided=eps_user_provided,
+        iterations_user_provided=iterations_user_provided,
+        pop_size_user_provided=pop_size_user_provided,
+        query_budget_user_provided=query_budget_user_provided,
+    )
+    resolved_eps = int(resolved_hparams["eps"])
+    eps_is_adaptive = bool(resolved_hparams["eps_is_adaptive"])
     loss = UnTargeted(model=adapter, true=y_true, to_pytorch_input=True)
 
     logger = AttackRunLogger()
@@ -396,23 +559,30 @@ def run_samoo_attack(
         "[Attack] 超参数: "
         f"eps={resolved_eps}{' (adaptive)' if eps_is_adaptive else ''}, "
         f"eps_ratio={resolved_eps / float(x.shape[0] * x.shape[1]):.4%}, "
-        f"iterations={iterations}, pop_size={pop_size}, pc={pc}, pm={pm}, "
-        f"zero_probability={zero_probability}, p_size={p_size}, tournament_size={tournament_size}, "
+        f"iterations={resolved_hparams['iterations']}, pop_size={resolved_hparams['pop_size']}, "
+        f"pc={resolved_hparams['pc']}, pm={resolved_hparams['pm']}, pm_end={resolved_hparams['pm_end']}, "
+        f"query_budget={resolved_hparams['query_budget']}, "
+        f"zero_probability={resolved_hparams['zero_probability']}, p_size={resolved_hparams['p_size']}, "
+        f"tournament_size={resolved_hparams['tournament_size']}, "
         f"include_dist={include_dist}, max_dist={max_dist}"
     )
+    logger.log(f"[Attack] 分辨率预设档位: {resolved_hparams['resolution_profile']}")
+    logger.log(f"[Attack] 置信度增强: applied={boost_applied}, reason={boost_reason}")
 
     params = AttackParams(
         x=x,
         eps=resolved_eps,
-        iterations=iterations,
-        pc=pc,
-        pm=pm,
-        pop_size=pop_size,
-        zero_probability=zero_probability,
+        iterations=int(resolved_hparams["iterations"]),
+        pc=float(resolved_hparams["pc"]),
+        pm=float(resolved_hparams["pm"]),
+        pm_end=float(resolved_hparams["pm_end"]) if resolved_hparams["pm_end"] is not None else None,
+        pop_size=int(resolved_hparams["pop_size"]),
+        query_budget=int(resolved_hparams["query_budget"]) if resolved_hparams["query_budget"] is not None else None,
+        zero_probability=float(resolved_hparams["zero_probability"]),
         include_dist=include_dist,
         max_dist=max_dist,
-        p_size=p_size,
-        tournament_size=tournament_size,
+        p_size=float(resolved_hparams["p_size"]),
+        tournament_size=int(resolved_hparams["tournament_size"]),
         save_directory=str(save_file),
     )
 
@@ -429,9 +599,9 @@ def run_samoo_attack(
         elif phase == "attack_start":
             logger.log(
                 "[Process] 进入进化循环: "
-                f"iterations={event.get('iterations')}, pc={event.get('pc')}, pm={event.get('pm')}, "
+                f"iterations={event.get('iterations')}, pc={event.get('pc')}, pm={event.get('pm')}, pm_end={event.get('pm_end')}, "
                 f"tournament={event.get('tournament_size')}, include_dist={event.get('include_dist')}, "
-                f"max_dist={event.get('max_dist')}, initial_queries={event.get('query_count')}"
+                f"max_dist={event.get('max_dist')}, initial_queries={event.get('query_count')}, query_budget={event.get('query_budget')}"
             )
         elif phase == "iteration":
             logger.log(
@@ -444,7 +614,12 @@ def run_samoo_attack(
             logger.log(
                 "[Process] 进化算子: "
                 f"iter={event.get('iteration')}, parents_pairs={event.get('parents_pairs')}, "
-                f"children={event.get('children')}, post_queries={event.get('post_query_count')}"
+                f"children={event.get('children')}, pm_current={event.get('pm_current')}, post_queries={event.get('post_query_count')}"
+            )
+        elif phase == "query_budget_reached":
+            logger.log(
+                "[Process] 达到查询预算，提前停止: "
+                f"iter={event.get('iteration')}, queries={event.get('query_count')}, budget={event.get('query_budget')}"
             )
         elif phase == "early_success":
             logger.log(
@@ -454,11 +629,10 @@ def run_samoo_attack(
         elif phase == "attack_end":
             logger.log(
                 "[Process] 进化结束: "
-                f"success={event.get('success')}, queries={event.get('query_count')}, best_loss={event.get('best_loss'):.6f}"
+                f"success={event.get('success')}, queries={event.get('query_count')}, "
+                f"query_budget={event.get('query_budget')}, best_loss={event.get('best_loss'):.6f}"
             )
 
-    probs_before = adapter.predict_proba(x)
-    pred_before = int(np.argmax(probs_before))
     logger.log(
         "[Model] 原图预测: "
         f"pred_before=class_{pred_before}, conf={float(probs_before[pred_before]):.6f}, "
