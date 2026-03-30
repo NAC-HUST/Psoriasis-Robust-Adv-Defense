@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import cast
 
 import torch
 from torch import Tensor, nn
 from torchvision import models
+from torchvision.models import ResNet
 
 
 class SiglipClassifier(nn.Module):
@@ -37,20 +39,24 @@ class SiglipClassifier(nn.Module):
         if not hasattr(self.vision_model, "get_image_features"):
             raise RuntimeError("当前 SigLIP 模型不支持 get_image_features。")
 
-        image_features = self.vision_model.get_image_features(pixel_values=pixel_values)
-        if not isinstance(image_features, torch.Tensor):
-            if hasattr(image_features, "pooler_output"):
-                image_features = image_features.pooler_output
-            elif hasattr(image_features, "last_hidden_state"):
-                image_features = image_features.last_hidden_state.mean(dim=1)
-            else:
-                raise RuntimeError("无法从 SigLIP 输出中提取图像特征。")
+        raw_features = self.vision_model.get_image_features(pixel_values=pixel_values)
+        if isinstance(raw_features, torch.Tensor):
+            image_features = raw_features
+        elif hasattr(raw_features, "pooler_output"):
+            image_features = cast(torch.Tensor, raw_features.pooler_output)
+        elif hasattr(raw_features, "last_hidden_state"):
+            image_features = cast(torch.Tensor, raw_features.last_hidden_state.mean(dim=1))
+        else:
+            raise RuntimeError("无法从 SigLIP 输出中提取图像特征。")
 
-        return self.classifier(image_features)  # type: ignore[no-any-return]
+        logits = self.classifier(image_features)
+        if not isinstance(logits, torch.Tensor):
+            raise RuntimeError("SigLIP 分类头输出必须为 torch.Tensor。")
+        return logits
 
 
 def build_resnet50_classifier(pretrained_weight_path: str | None = None, num_classes: int = 2) -> nn.Module:
-    model = models.resnet50(weights=None)  # type: ignore[assignment]
+    model: ResNet = models.resnet50(weights=None)
 
     if pretrained_weight_path is not None and Path(pretrained_weight_path).exists():
         state_dict = torch.load(pretrained_weight_path, map_location="cpu")

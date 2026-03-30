@@ -215,8 +215,11 @@ uv run main.py attack \
 - `--save-path`：自定义原始 `npy` 结果路径（默认在 `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/samoo_result.npy`）
 - `--export-dir`：攻击文本与图像结果目录（默认在 `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/`）
 - `--no-raw-npy`：不保留原始 `npy`
-- `--eps` / `--iterations` / `--pop-size`：攻击强度核心参数（`--eps` 不传时按分辨率自适应，默认约为总像素数 2%，下限 128）
-- `--p-size`：单步扰动幅度（默认 `0.25`）
+- `--eps` / `--iterations` / `--pop-size`：攻击强度核心参数（不传时按图像分辨率自动预设）
+- `--query-budget`：查询预算上限（不传时按图像分辨率自动预设）
+- `--pm-end`：末期变异率（与 `--pm` 形成线性退火，提升中后期收敛稳定性）
+- `--p-size`：单步扰动幅度（不传时按图像分辨率自动预设）
+- 当原图置信度极高（如 `true_class_conf >= 0.995`）且未手动指定核心参数时，攻击器会自动上调 `eps/query-budget/pop-size`，提高跨越决策边界的概率。
 - `--include-dist` + `--max-dist`：是否启用距离约束筛选
 - `--seed`：随机种子
 
@@ -255,6 +258,8 @@ SigLIP 路径依赖 `transformers`。请确认环境安装了项目依赖，或�
 ## 攻击超参数解读（SAMOO）
 
 - `eps`：允许修改的像素位置数量；越大越容易成功，但扰动更明显。
+- `query-budget`：总查询预算；推荐优先固定预算，再调 `pop-size` 与 `iterations`。
+- `pm` / `pm-end`：变异率起止值；算法会从 `pm` 逐步退火到 `pm-end`。
 - `p-size`：每次像素扰动步长（输入空间，单位约等于像素归一化值）；越大越容易翻转。
 - 说明：`p-size` 不是必须按 `1/255` 量级设置；在黑盒稀疏攻击里常用更大步长（如 `0.25~2.0`）以提高成功率。
 - `iterations`：进化迭代轮数；越大搜索更充分但更慢。
@@ -270,7 +275,7 @@ SigLIP 路径依赖 `transformers`。请确认环境安装了项目依赖，或�
 - 项目入口：`main.py`
 - 包入口：`psorad`（`pyproject.toml` 中 `project.scripts`）
 
-## 整体规划
+## 整体规划 · WIP
 
 ### 1. 面向医学影像的定向对抗攻击方法
 - 研究生成人眼不可察觉且具有高迁移性的对抗扰动方法。

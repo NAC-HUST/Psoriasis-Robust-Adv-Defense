@@ -20,7 +20,9 @@ class AttackParams:
     iterations: int
     pc: float
     pm: float
+    pm_end: float | None
     pop_size: int
+    query_budget: int | None
     zero_probability: float
     include_dist: bool
     max_dist: float
@@ -41,8 +43,12 @@ class AttackParams:
             raise ValueError("pc 必须在 [0, 1]。")
         if not (0.0 <= self.pm <= 1.0):
             raise ValueError("pm 必须在 [0, 1]。")
+        if self.pm_end is not None and not (0.0 <= self.pm_end <= 1.0):
+            raise ValueError("pm_end 必须在 [0, 1]。")
         if not (0.0 <= self.zero_probability <= 1.0):
             raise ValueError("zero_probability 必须在 [0, 1]。")
+        if self.query_budget is not None and self.query_budget <= 0:
+            raise ValueError("query_budget 必须大于 0。")
         if self.max_dist < 0.0:
             raise ValueError("max_dist 不能小于 0。")
         if self.p_size <= 0.0:
@@ -60,7 +66,9 @@ class AttackParams:
             iterations=int(params["iterations"]),
             pc=float(params["pc"]),
             pm=float(params["pm"]),
+            pm_end=float(params["pm_end"]) if params.get("pm_end") is not None else None,
             pop_size=int(params["pop_size"]),
+            query_budget=int(params["query_budget"]) if params.get("query_budget") is not None else None,
             zero_probability=float(params["zero_probability"]),
             include_dist=bool(params["include_dist"]),
             max_dist=float(params["max_dist"]),
@@ -161,14 +169,40 @@ class Attack:
                 "iterations": total_iterations,
                 "pc": float(self.params.pc),
                 "pm": float(self.params.pm),
+                "pm_end": float(self.params.pm_end) if self.params.pm_end is not None else None,
                 "tournament_size": int(self.params.tournament_size),
                 "include_dist": bool(self.params.include_dist),
                 "max_dist": float(self.params.max_dist),
                 "query_count": int(query_count),
+                "query_budget": int(self.params.query_budget) if self.params.query_budget is not None else None,
             }
         )
 
         for iteration in range(1, total_iterations):
+            if self.params.query_budget is not None and query_count >= int(self.params.query_budget):
+                population.fronts = fast_nondominated_sort(population.population)
+                feasible = population.find_adv_solns(float(self.params.max_dist))
+                if feasible:
+                    self._emit(
+                        {
+                            "phase": "early_success",
+                            "iteration": int(iteration),
+                            "query_count": int(query_count),
+                            "feasible_count": len(feasible),
+                        }
+                    )
+                    self._save_result(population, loss_function, query_count, success=True)
+                    return
+                self._emit(
+                    {
+                        "phase": "query_budget_reached",
+                        "iteration": int(iteration),
+                        "query_count": int(query_count),
+                        "query_budget": int(self.params.query_budget),
+                    }
+                )
+                break
+
             population.fronts = fast_nondominated_sort(population.population)
             feasible = population.find_adv_solns(float(self.params.max_dist))
 
@@ -200,6 +234,15 @@ class Attack:
                 self._save_result(population, loss_function, query_count, success=True)
                 return
 
+            if self.params.pm_end is None:
+                pm_current = float(self.params.pm)
+            else:
+                if total_iterations <= 2:
+                    progress = 1.0
+                else:
+                    progress = float(iteration - 1) / float(total_iterations - 2)
+                pm_current = float(self.params.pm) + (float(self.params.pm_end) - float(self.params.pm)) * progress
+
             for front in population.fronts:
                 calculate_crowding_distance(front)
 
@@ -207,7 +250,7 @@ class Attack:
             children = generate_offspring(
                 parents=parents,
                 pc=float(self.params.pc),
-                pm=float(self.params.pm),
+                pm=pm_current,
                 all_pixels=all_pixels,
                 zero_prob=float(self.params.zero_probability),
             )
@@ -223,6 +266,7 @@ class Attack:
                         "iteration": int(iteration),
                         "parents_pairs": len(parents),
                         "children": len(children),
+                        "pm_current": float(pm_current),
                         "post_query_count": int(query_count),
                     }
                 )
@@ -255,6 +299,7 @@ class Attack:
                 "phase": "attack_end",
                 "success": False,
                 "query_count": int(query_count),
+                "query_budget": int(self.params.query_budget) if self.params.query_budget is not None else None,
                 "best_loss": float(last_best[0]) if len(last_best) > 0 else 0.0,
             }
         )
