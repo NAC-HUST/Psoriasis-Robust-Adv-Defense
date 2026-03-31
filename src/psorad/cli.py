@@ -45,6 +45,9 @@ def build_parser() -> argparse.ArgumentParser:
     attack_parser.add_argument("--datadir", default="psoriasis_normal")
     attack_parser.add_argument("--manifest-csv", default=None)
     attack_parser.add_argument("--sample-index", type=int, default=0)
+    attack_parser.add_argument("--attack-split", choices=["all", "train", "val"], default="val", help="默认仅从验证集(val)采样攻击")
+    attack_parser.add_argument("--val-ratio", type=float, default=0.2, help="当manifest不含split列时，用于重建train/val划分")
+    attack_parser.add_argument("--split-seed", type=int, default=42, help="当manifest不含split列时，划分随机种子")
     attack_parser.add_argument("--image-size", type=int, default=224)
     attack_parser.add_argument("--save-path", default=None)
     attack_parser.add_argument("--export-dir", default=None, help="攻击文本与图像结果输出目录")
@@ -122,6 +125,9 @@ def main() -> None:
             datadir=args.datadir,
             manifest_csv=manifest_csv,
             sample_index=args.sample_index,
+            attack_split=args.attack_split,
+            val_ratio=args.val_ratio,
+            split_seed=args.split_seed,
             image_size=args.image_size,
             save_path=args.save_path,
             export_dir=args.export_dir,

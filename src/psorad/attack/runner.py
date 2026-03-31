@@ -269,7 +269,9 @@ def _export_attack_artifacts(
     export_dir: Path,
     backbone: str,
     checkpoint_path: str,
-    sample_index: int,
+    sample_index_subset: int,
+    sample_index_global: int,
+    attack_split: str,
     raw_npy_path: Path,
     payload: dict[str, Any],
     original_img: np.ndarray,
@@ -319,7 +321,10 @@ def _export_attack_artifacts(
     summary = {
         "backbone": backbone,
         "checkpoint_path": checkpoint_path,
-        "sample_index": sample_index,
+        "sample_index": sample_index_subset,
+        "sample_index_subset": sample_index_subset,
+        "sample_index_global": sample_index_global,
+        "attack_split": attack_split,
         "true_label": true_label,
         "pred_before": pred_before,
         "pred_after": pred_after,
@@ -360,7 +365,9 @@ def _export_attack_artifacts(
                 "SAMOO Attack Summary",
                 f"backbone: {backbone}",
                 f"checkpoint: {checkpoint_path}",
-                f"sample_index: {sample_index}",
+                f"sample_index_subset: {sample_index_subset}",
+                f"sample_index_global: {sample_index_global}",
+                f"attack_split: {attack_split}",
                 f"true_label: {true_label}",
                 f"pred_before: {pred_before}",
                 f"pred_after: {pred_after}",
@@ -436,6 +443,66 @@ def _load_sample_from_manifest(
     return x, label, image_path, class_name
 
 
+def _load_sample_for_attack_split(
+    manifest_csv: str,
+    sample_index: int,
+    image_size: int,
+    attack_split: str,
+    val_ratio: float,
+    split_seed: int,
+) -> tuple[np.ndarray, int, Path, str, int, int]:
+    split_name = attack_split.lower().strip()
+    if split_name not in {"all", "train", "val"}:
+        raise ValueError("attack_split 仅支持 all/train/val")
+
+    if split_name == "all":
+        x, label, image_path, class_name = _load_sample_from_manifest(
+            manifest_csv=manifest_csv,
+            sample_index=sample_index,
+            image_size=image_size,
+        )
+        total = len(pd.read_csv(manifest_csv))
+        return x, label, image_path, class_name, total, sample_index
+
+    manifest = pd.read_csv(manifest_csv)
+    if "split" in manifest.columns:
+        manifest_with_idx = manifest.reset_index().rename(columns={"index": "global_index"})
+        subset = manifest_with_idx[manifest_with_idx["split"].astype(str).str.lower() == split_name].reset_index(drop=True)
+    else:
+        total = len(manifest)
+        val_len = max(int(total * val_ratio), 1)
+        train_len = total - val_len
+        if train_len <= 0:
+            raise ValueError("训练集为空，请增大数据量或减小 val_ratio")
+
+        generator = torch.Generator().manual_seed(split_seed)
+        indices = torch.randperm(total, generator=generator).tolist()
+        train_indices = indices[:train_len]
+        val_indices = indices[train_len:]
+        selected_indices = train_indices if split_name == "train" else val_indices
+
+        manifest_with_idx = manifest.reset_index().rename(columns={"index": "global_index"})
+        subset = manifest_with_idx.iloc[selected_indices].reset_index(drop=True)
+
+    if subset.empty:
+        raise ValueError(f"在 manifest 中未找到 split={split_name} 的样本")
+
+    if sample_index < 0 or sample_index >= len(subset):
+        raise IndexError(f"sample_index 越界: {sample_index}, split={split_name} 样本总量: {len(subset)}")
+
+    row = subset.iloc[sample_index]
+    global_index = int(row["global_index"])
+    image_path = Path(str(row["file_path"]))
+    label = int(row["class_idx"])
+    class_name = str(row.get("class_name", str(label)))
+
+    with Image.open(image_path) as img:
+        image = center_crop_resize(img, image_size=image_size)
+        x = np.asarray(image, dtype=np.float32) / 255.0
+
+    return x, label, image_path, class_name, len(subset), global_index
+
+
 class AttackRunLogger:
     def __init__(self) -> None:
         self.lines: list[str] = []
@@ -459,6 +526,9 @@ def run_samoo_attack(
     datadir: str = "psoriasis_normal",
     manifest_csv: str = "dataset/processed_data/psoriasis_normal/class_manifest.csv",
     sample_index: int = 0,
+    attack_split: str = "val",
+    val_ratio: float = 0.2,
+    split_seed: int = 42,
     image_size: int = 224,
     save_path: str | None = None,
     export_dir: str | None = None,
@@ -484,10 +554,13 @@ def run_samoo_attack(
     model = _load_checkpoint(backbone=backbone, checkpoint_path=checkpoint_path, device=device)
     adapter = BinaryModelAdapter(model=model, device=device, backbone=backbone)
 
-    x, y_true, image_path, class_name = _load_sample_from_manifest(
+    x, y_true, image_path, class_name, split_total, sample_index_global = _load_sample_for_attack_split(
         manifest_csv=manifest_csv,
         sample_index=sample_index,
         image_size=image_size,
+        attack_split=attack_split,
+        val_ratio=val_ratio,
+        split_seed=split_seed,
     )
 
     eps_user_provided = eps is not None
@@ -550,8 +623,9 @@ def run_samoo_attack(
     logger.log("=" * 80)
     logger.log("[Attack] 启动 SAMOO 攻击")
     logger.log(f"[Attack] 数据清单: {manifest_csv}")
+    logger.log(f"[Attack] 攻击子集: split={attack_split}, split_total={split_total}, val_ratio={val_ratio}, split_seed={split_seed}")
     logger.log(f"[Attack] 数据集目录(datadir): {datadir}")
-    logger.log(f"[Attack] 采样索引: {sample_index}")
+    logger.log(f"[Attack] 采样索引: subset_index={sample_index}, global_index={sample_index_global}")
     logger.log(f"[Attack] 原图路径: {image_path}")
     logger.log(f"[Attack] 原始标签: class_idx={y_true}, class_name={class_name}")
     logger.log(f"[Attack] 攻击模型: backbone={backbone}, checkpoint={checkpoint_path}")
@@ -677,7 +751,9 @@ def run_samoo_attack(
         export_dir=export_path,
         backbone=backbone,
         checkpoint_path=checkpoint_path,
-        sample_index=sample_index,
+        sample_index_subset=sample_index,
+        sample_index_global=sample_index_global,
+        attack_split=attack_split,
         raw_npy_path=save_file,
         payload=payload,
         original_img=x,

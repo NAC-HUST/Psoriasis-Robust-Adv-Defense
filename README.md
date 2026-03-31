@@ -140,15 +140,26 @@ uv run main.py train \
 - 默认：`model/trained_classifier/<backbone>/best_classifier.pt`
 - 若设置 `--modelname`：`model/trained_classifier/<backbone>/<modelname>`
 
+训练同时会在同目录输出本次数据划分清单：
+
+- `model/trained_classifier/<backbone>/<modelname_stem>_train-val-split.csv`
+
+该 CSV 含 `split` 列（`train` / `val`），用于复现本次训练时的样本划分。
+
 ### 4) 运行 SAMOO 攻击
 
 ```bash
 uv run main.py attack \
 	--backbone resnet50 \
 	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
 	--datadir psoriasis_normal \
 	--sample-index 0
 ```
+
+说明：攻击默认 `--attack-split val`，即只从验证集子集取样。
+`--sample-index` 对应“子集内编号”（0-based），不是全量 manifest 的全局行号。
+攻击日志与 summary 会同时记录 `sample_index_subset` 与 `sample_index_global`。
 
 默认输出：
 
@@ -175,6 +186,40 @@ uv run main.py attack \
 	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
 	--export-dir output/attack/attack_case_001 \
 	--no-raw-npy
+```
+
+### 4.1) 批量并行攻击（tools 脚本）
+
+```bash
+uv run python tools/batch_parallel_attack.py \
+	--backbone resnet50 \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
+	--datadir psoriasis_normal \
+	--attack-split val \
+	--start-index 0 \
+	--max-samples 100 \
+	--workers 4
+```
+
+说明：
+
+- 终端会显示 `tqdm` 进度条（已完成/成功/错误计数）。
+- 默认输出根目录为 `output/batch_attack/<backbone>/<datadir>/`。
+- 每个样本输出在 `sample_<subset_index>/` 子目录，包含单样本 `summary.json/txt`、日志和图像。
+- 批量统计报告输出：
+  - `batch_report.json`（完整结构化报告）
+  - `batch_report.csv`（逐样本统计表）
+  - `batch_report.md`（人类可读总结）
+
+若你希望同一数据集保留多次运行记录，可加 `--run-name` 放到子目录：
+
+```bash
+uv run python tools/batch_parallel_attack.py \
+	--backbone resnet50 \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--datadir psoriasis_normal \
+	--run-name run_20260331_1
 ```
 
 ## CLI 参数速查
@@ -210,7 +255,10 @@ uv run main.py attack \
 - `--checkpoint`：训练好的 checkpoint（必填）
 - `--datadir`：默认读取 `dataset/processed_data/<datadir>/class_manifest.csv`
 - `--manifest-csv`：手动指定清单（优先级高于 `--datadir`）
-- `--sample-index`：攻击样本索引
+- `--attack-split`：攻击子集（`all` / `train` / `val`，默认 `val`）
+- `--val-ratio`：当清单不含 `split` 列时，用于重建 train/val 划分（默认 `0.2`）
+- `--split-seed`：当清单不含 `split` 列时，划分随机种子（默认 `42`）
+- `--sample-index`：攻击样本索引（子集内 0-based 编号）
 - `--image-size`：攻击样本读取尺寸（默认 224）
 - `--save-path`：自定义原始 `npy` 结果路径（默认在 `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/samoo_result.npy`）
 - `--export-dir`：攻击文本与图像结果目录（默认在 `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/`）
@@ -222,6 +270,18 @@ uv run main.py attack \
 - 当原图置信度极高（如 `true_class_conf >= 0.995`）且未手动指定核心参数时，攻击器会自动上调 `eps/query-budget/pop-size`，提高跨越决策边界的概率。
 - `--include-dist` + `--max-dist`：是否启用距离约束筛选
 - `--seed`：随机种子
+
+### tools/batch_parallel_attack.py
+
+- `--backbone` / `--checkpoint`：必填，指定底模与权重。
+- `--datadir` / `--manifest-csv`：数据来源（`manifest-csv` 优先）。
+- `--attack-split` / `--val-ratio` / `--split-seed`：子集定义方式。
+- `--sample-indices`：指定逗号分隔的子集内索引（优先于 `--start-index/--max-samples`）。
+- `--workers`：并行进程数。
+- `--keep-raw-npy`：保留每样本 `samoo_result.npy`（默认删除）。
+- `--output-root`：批量输出根目录（默认 `output/batch_attack`）。
+- `--run-name`：运行名（默认按时间戳自动生成）。
+- 其余攻击超参数（`--eps` / `--iterations` / `--pop-size` / `--query-budget` 等）与 `attack` 子命令一致。
 
 说明：在多分类任务中，攻击摘要会输出通用置信度字段（`prob_true_before/after`、`prob_pred_before/after`）。
 `prob_class1_*` 仅为兼容旧版字段，不代表“psoriasis 概率”。
