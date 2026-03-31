@@ -207,6 +207,7 @@ marimo/_lsp/
 __marimo__/
 
 # Other
+.copilot/
 tmp/
 reb/
 dataset/processed_data/
@@ -219,3 +220,5 @@ model/trained_classifier/siglip/
 output/
 tools/bak/
 check_quality.py
+docs-src/
+node_modules/

@@ -49,16 +49,18 @@ def build_parser() -> argparse.ArgumentParser:
     attack_parser.add_argument("--save-path", default=None)
     attack_parser.add_argument("--export-dir", default=None, help="攻击文本与图像结果输出目录")
     attack_parser.add_argument("--no-raw-npy", action="store_true", help="不保留原始npy结果文件")
-    attack_parser.add_argument("--eps", type=int, default=None, help="扰动像素数；不传时按分辨率自适应")
-    attack_parser.add_argument("--iterations", type=int, default=400, help="进化迭代次数")
-    attack_parser.add_argument("--pc", type=float, default=0.3, help="交叉概率")
-    attack_parser.add_argument("--pm", type=float, default=0.6, help="变异概率")
-    attack_parser.add_argument("--pop-size", type=int, default=12, help="种群大小")
-    attack_parser.add_argument("--zero-probability", type=float, default=0.2, help="像素扰动为0的概率")
+    attack_parser.add_argument("--eps", type=int, default=None, help="扰动像素数；不传时按分辨率预设")
+    attack_parser.add_argument("--iterations", type=int, default=None, help="进化迭代次数；不传时由分辨率预设或query-budget推导")
+    attack_parser.add_argument("--pc", type=float, default=None, help="交叉概率；不传时按分辨率预设")
+    attack_parser.add_argument("--pm", type=float, default=None, help="初始变异概率；不传时按分辨率预设")
+    attack_parser.add_argument("--pm-end", type=float, default=None, help="末期变异概率；不传时按分辨率预设")
+    attack_parser.add_argument("--pop-size", type=int, default=None, help="种群大小；不传时按分辨率预设")
+    attack_parser.add_argument("--query-budget", type=int, default=None, help="查询预算上限；不传时按分辨率预设")
+    attack_parser.add_argument("--zero-probability", type=float, default=None, help="像素扰动为0的概率；不传时按分辨率预设")
     attack_parser.add_argument("--include-dist", action="store_true", help="在可行解筛选时加入距离约束")
     attack_parser.add_argument("--max-dist", type=float, default=1e9, help="可行解最大距离阈值")
-    attack_parser.add_argument("--p-size", type=float, default=0.25, help="单步扰动幅度")
-    attack_parser.add_argument("--tournament-size", type=int, default=2, help="锦标赛选择规模")
+    attack_parser.add_argument("--p-size", type=float, default=None, help="单步扰动幅度；不传时按分辨率预设")
+    attack_parser.add_argument("--tournament-size", type=int, default=None, help="锦标赛选择规模；不传时按分辨率预设")
     attack_parser.add_argument("--seed", type=int, default=42)
 
     return parser
@@ -128,7 +130,9 @@ def main() -> None:
             iterations=args.iterations,
             pc=args.pc,
             pm=args.pm,
+            pm_end=args.pm_end,
             pop_size=args.pop_size,
+            query_budget=args.query_budget,
             zero_probability=args.zero_probability,
             include_dist=args.include_dist,
             max_dist=args.max_dist,
