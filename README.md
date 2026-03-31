@@ -188,6 +188,40 @@ uv run main.py attack \
 	--no-raw-npy
 ```
 
+### 4.1) 批量并行攻击（tools 脚本）
+
+```bash
+uv run python tools/batch_parallel_attack.py \
+	--backbone resnet50 \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
+	--datadir psoriasis_normal \
+	--attack-split val \
+	--start-index 0 \
+	--max-samples 100 \
+	--workers 4
+```
+
+说明：
+
+- 终端会显示 `tqdm` 进度条（已完成/成功/错误计数）。
+- 默认输出根目录为 `output/batch_attack/<backbone>/<datadir>/`。
+- 每个样本输出在 `sample_<subset_index>/` 子目录，包含单样本 `summary.json/txt`、日志和图像。
+- 批量统计报告输出：
+  - `batch_report.json`（完整结构化报告）
+  - `batch_report.csv`（逐样本统计表）
+  - `batch_report.md`（人类可读总结）
+
+若你希望同一数据集保留多次运行记录，可加 `--run-name` 放到子目录：
+
+```bash
+uv run python tools/batch_parallel_attack.py \
+	--backbone resnet50 \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--datadir psoriasis_normal \
+	--run-name run_20260331_1
+```
+
 ## CLI 参数速查
 
 ### preprocess
@@ -236,6 +270,18 @@ uv run main.py attack \
 - 当原图置信度极高（如 `true_class_conf >= 0.995`）且未手动指定核心参数时，攻击器会自动上调 `eps/query-budget/pop-size`，提高跨越决策边界的概率。
 - `--include-dist` + `--max-dist`：是否启用距离约束筛选
 - `--seed`：随机种子
+
+### tools/batch_parallel_attack.py
+
+- `--backbone` / `--checkpoint`：必填，指定底模与权重。
+- `--datadir` / `--manifest-csv`：数据来源（`manifest-csv` 优先）。
+- `--attack-split` / `--val-ratio` / `--split-seed`：子集定义方式。
+- `--sample-indices`：指定逗号分隔的子集内索引（优先于 `--start-index/--max-samples`）。
+- `--workers`：并行进程数。
+- `--keep-raw-npy`：保留每样本 `samoo_result.npy`（默认删除）。
+- `--output-root`：批量输出根目录（默认 `output/batch_attack`）。
+- `--run-name`：运行名（默认按时间戳自动生成）。
+- 其余攻击超参数（`--eps` / `--iterations` / `--pop-size` / `--query-budget` 等）与 `attack` 子命令一致。
 
 说明：在多分类任务中，攻击摘要会输出通用置信度字段（`prob_true_before/after`、`prob_pred_before/after`）。
 `prob_class1_*` 仅为兼容旧版字段，不代表“psoriasis 概率”。
