@@ -140,15 +140,26 @@ uv run main.py train \
 - 默认：`model/trained_classifier/<backbone>/best_classifier.pt`
 - 若设置 `--modelname`：`model/trained_classifier/<backbone>/<modelname>`
 
+训练同时会在同目录输出本次数据划分清单：
+
+- `model/trained_classifier/<backbone>/<modelname_stem>_train-val-split.csv`
+
+该 CSV 含 `split` 列（`train` / `val`），用于复现本次训练时的样本划分。
+
 ### 4) 运行 SAMOO 攻击
 
 ```bash
 uv run main.py attack \
 	--backbone resnet50 \
 	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
 	--datadir psoriasis_normal \
 	--sample-index 0
 ```
+
+说明：攻击默认 `--attack-split val`，即只从验证集子集取样。
+`--sample-index` 对应“子集内编号”（0-based），不是全量 manifest 的全局行号。
+攻击日志与 summary 会同时记录 `sample_index_subset` 与 `sample_index_global`。
 
 默认输出：
 
@@ -210,7 +221,10 @@ uv run main.py attack \
 - `--checkpoint`：训练好的 checkpoint（必填）
 - `--datadir`：默认读取 `dataset/processed_data/<datadir>/class_manifest.csv`
 - `--manifest-csv`：手动指定清单（优先级高于 `--datadir`）
-- `--sample-index`：攻击样本索引
+- `--attack-split`：攻击子集（`all` / `train` / `val`，默认 `val`）
+- `--val-ratio`：当清单不含 `split` 列时，用于重建 train/val 划分（默认 `0.2`）
+- `--split-seed`：当清单不含 `split` 列时，划分随机种子（默认 `42`）
+- `--sample-index`：攻击样本索引（子集内 0-based 编号）
 - `--image-size`：攻击样本读取尺寸（默认 224）
 - `--save-path`：自定义原始 `npy` 结果路径（默认在 `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/samoo_result.npy`）
 - `--export-dir`：攻击文本与图像结果目录（默认在 `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/`）
