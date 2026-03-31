@@ -64,6 +64,19 @@ def build_loaders(
     for_siglip: bool,
     seed: int,
 ) -> tuple[DataLoader[tuple[Tensor, Tensor]], DataLoader[tuple[Tensor, Tensor]]]:
+    train_manifest, val_manifest = split_manifest(manifest_csv=manifest_csv, val_ratio=val_ratio, seed=seed)
+
+    train_dataset = SkinDataset(manifest_csv=None, transform=build_transforms(image_size=image_size, for_siglip=for_siglip, train=True))
+    train_dataset.set_manifest(train_manifest)
+    val_dataset = SkinDataset(manifest_csv=None, transform=build_transforms(image_size=image_size, for_siglip=for_siglip, train=False))
+    val_dataset.set_manifest(val_manifest)
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
+    return train_loader, val_loader
+
+
+def split_manifest(manifest_csv: str, val_ratio: float, seed: int) -> tuple[pd.DataFrame, pd.DataFrame]:
     manifest = pd.read_csv(manifest_csv)
     total = len(manifest)
     val_len = max(int(total * val_ratio), 1)
@@ -78,12 +91,4 @@ def build_loaders(
 
     train_manifest = manifest.iloc[train_indices].reset_index(drop=True)
     val_manifest = manifest.iloc[val_indices].reset_index(drop=True)
-
-    train_dataset = SkinDataset(manifest_csv=None, transform=build_transforms(image_size=image_size, for_siglip=for_siglip, train=True))
-    train_dataset.set_manifest(train_manifest)
-    val_dataset = SkinDataset(manifest_csv=None, transform=build_transforms(image_size=image_size, for_siglip=for_siglip, train=False))
-    val_dataset.set_manifest(val_manifest)
-
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
-    return train_loader, val_loader
+    return train_manifest, val_manifest

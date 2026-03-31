@@ -3,12 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+import pandas as pd
 import torch
 from torch import Tensor, nn
 from torch.optim import AdamW
 from tqdm import tqdm
 
-from psorad.data.dataset import build_loaders
+from psorad.data.dataset import build_loaders, split_manifest
 from psorad.models.classifier import build_resnet50_classifier
 from psorad.utils.seed import set_seed
 
@@ -66,12 +67,24 @@ def _evaluate(model: nn.Module, loader: torch.utils.data.DataLoader[tuple[Tensor
     return sum(losses) / max(len(losses), 1), sum(accs) / max(len(accs), 1)
 
 
+def _export_split_csv(checkpoint_path: Path, train_manifest: pd.DataFrame, val_manifest: pd.DataFrame) -> Path:
+    split_path = checkpoint_path.with_name(f"{checkpoint_path.stem}_train-val-split.csv")
+
+    train_part = train_manifest.copy()
+    train_part["split"] = "train"
+    val_part = val_manifest.copy()
+    val_part["split"] = "val"
+
+    split_manifest_df = pd.concat([train_part, val_part], axis=0, ignore_index=True)
+    split_manifest_df.to_csv(split_path, index=False)
+    return split_path
+
+
 def train_classifier(config: TrainConfig) -> Path:
     set_seed(config.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # 自动检测 num_classes
-    import pandas as pd
     manifest = pd.read_csv(config.manifest_csv)
     if "class_idx" in manifest.columns:
         detected_num_classes = int(manifest["class_idx"].max()) + 1
@@ -108,6 +121,14 @@ def train_classifier(config: TrainConfig) -> Path:
     save_dir = Path(config.output_dir) / config.backbone
     save_dir.mkdir(parents=True, exist_ok=True)
     checkpoint_path = save_dir / _resolve_model_name(config.model_name)
+
+    train_manifest, val_manifest = split_manifest(
+        manifest_csv=config.manifest_csv,
+        val_ratio=config.val_ratio,
+        seed=config.seed,
+    )
+    split_csv_path = _export_split_csv(checkpoint_path=checkpoint_path, train_manifest=train_manifest, val_manifest=val_manifest)
+    print(f"数据集划分已保存: {split_csv_path}")
 
     best_val_acc = -1.0
     for epoch in range(1, config.epochs + 1):
