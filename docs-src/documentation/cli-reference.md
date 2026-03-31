@@ -275,7 +275,12 @@ uv run main.py attack [OPTIONS]
 --backbone TEXT              骨干网络 [必需]
 --checkpoint TEXT            分类器权重路径 [必需]
 --datadir TEXT               数据集名称 [必需]
---sample-index INTEGER       目标样本索引 [默认: 0]
+--manifest-csv TEXT          数据清单路径 [可选]
+--attack-split TEXT          攻击子集 [默认: val]
+                            可选值: all, train, val
+--val-ratio FLOAT            当清单无 split 列时的验证集比例 [默认: 0.2]
+--split-seed INTEGER         当清单无 split 列时的划分随机种子 [默认: 42]
+--sample-index INTEGER       目标样本索引（子集内 0-based） [默认: 0]
 --device TEXT                计算设备 [默认: cuda]
 --help                       显示帮助信息
 ```
@@ -298,9 +303,12 @@ uv run main.py attack [OPTIONS]
 uv run main.py attack \
     --backbone resnet50 \
     --checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+    --manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
     --datadir psoriasis_normal \
     --sample-index 0
 ```
+
+默认 `--attack-split val`，因此 `--sample-index` 指向验证集子集中的第 N 个样本。
 
 #### 多样本攻击
 

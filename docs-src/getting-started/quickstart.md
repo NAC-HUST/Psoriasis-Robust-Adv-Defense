@@ -90,7 +90,9 @@ uv run main.py train \
 
 ResNet50 预计 5-10 分钟（GPU）；SigLIP 预计 10-15 分钟（GPU）。
 
- **输出**: `model/trained_classifier/<backbone>/best_classifier.pt`
+ **输出**:
+- `model/trained_classifier/<backbone>/best_classifier.pt`
+- `model/trained_classifier/<backbone>/<modelname_stem>_train-val-split.csv`（包含 `split=train/val`）
 
 ### 步骤  执行对抗攻击
 
@@ -98,11 +100,14 @@ ResNet50 预计 5-10 分钟（GPU）；SigLIP 预计 10-15 分钟（GPU）。
 uv run main.py attack \
     --backbone resnet50 \
     --checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+    --manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
     --datadir psoriasis_normal \
     --sample-index 0
 ```
 
  **输出**: `output/attack/resnet50/`
+
+默认 `--attack-split val`，`--sample-index` 对应验证子集内编号（0-based）。
 
 ## 理解输出结果
 

@@ -118,7 +118,9 @@ uv run main.py train \
     --freeze-siglip-backbone
 ```
 
-**输出**: `model/trained_classifier/<backbone>/best_classifier.pt`
+**输出**:
+- `model/trained_classifier/<backbone>/best_classifier.pt`
+- `model/trained_classifier/<backbone>/<modelname_stem>_train-val-split.csv`（包含 `split=train/val`）
 
 ### 第五步：对抗攻击
 
@@ -126,11 +128,14 @@ uv run main.py train \
 uv run main.py attack \
     --backbone resnet50 \
     --checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+    --manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
     --datadir psoriasis_normal \
     --sample-index 0
 ```
 
 **输出**: `output/attack/resnet50/`
+
+默认 `--attack-split val`，即只从验证集子集取样。`--sample-index` 是子集内编号（0-based），不是全量清单的全局行号。
 
 ## 学术价值
 

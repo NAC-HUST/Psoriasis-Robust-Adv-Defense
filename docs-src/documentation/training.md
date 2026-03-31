@@ -35,6 +35,12 @@ uv run main.py train \
 
 ## 输出和日志
 
+训练完成后，除了模型 checkpoint 外，还会在同目录输出本次数据划分清单：
+
+- `model/trained_classifier/<backbone>/<modelname_stem>_train-val-split.csv`
+
+该 CSV 包含 `split` 列（`train` / `val`），用于复现训练阶段的数据集划分，并可直接用于后续攻击。
+
 见 [CLI 参考 - train](cli-reference.md#train)
 
 ---
