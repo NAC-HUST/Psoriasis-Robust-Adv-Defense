@@ -23,6 +23,16 @@ psorad [COMMAND] [OPTIONS]
 | `train` | 训练分类器 |  必需 |
 | `attack` | 执行对抗攻击 |  必需 |
 
+## Tools 脚本
+
+除 `main.py` 子命令外，项目还提供批量并行攻击脚本：
+
+```bash
+uv run python tools/batch_parallel_attack.py [OPTIONS]
+```
+
+该脚本用于在同一数据子集上并行攻击多个样本，并输出统一统计报告。
+
 ---
 
 ## preprocess
@@ -358,6 +368,103 @@ uv run main.py attack \
 ```
 
 ### 输出
+
+默认输出目录（单样本）：
+
+```
+output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/
+├── summary.json
+├── summary.txt
+├── attack_log.txt
+├── before.png
+├── after.png
+├── diff_x4.png
+├── before_after_diff.png
+└── samoo_result.npy
+```
+
+---
+
+## tools/batch_parallel_attack.py
+
+批量并行执行 SAMOO，并输出完整统计报告。
+
+### 用法
+
+```bash
+uv run python tools/batch_parallel_attack.py [OPTIONS]
+```
+
+### 核心选项
+
+```
+--backbone TEXT              底模名称 [必需]
+                            可选值: resnet50, siglip
+--checkpoint TEXT            分类器权重路径 [必需]
+--datadir TEXT               数据集目录名 [默认: psoriasis_normal]
+--manifest-csv TEXT          数据清单路径 [可选]
+
+--attack-split TEXT          攻击子集 [默认: val]
+                            可选值: all, train, val
+--start-index INTEGER        子集起始索引 [默认: 0]
+--max-samples INTEGER        最大样本数 [默认: 全部]
+--sample-indices TEXT        指定逗号分隔子集索引（优先于 start/max）
+
+--workers INTEGER            并行进程数 [默认: min(4, CPU核数)]
+--seed INTEGER               随机种子 [默认: 42]
+--keep-raw-npy               保留每样本原始 npy [默认: False]
+
+--output-root TEXT           输出根目录 [默认: output/batch_attack]
+--run-name TEXT              可选运行子目录名
+```
+
+其余攻击参数（`--eps`、`--iterations`、`--pop-size`、`--query-budget` 等）与 `attack` 子命令一致。
+
+### 示例
+
+```bash
+uv run python tools/batch_parallel_attack.py \
+    --backbone resnet50 \
+    --checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+    --manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
+    --datadir imagenette \
+    --attack-split val \
+    --start-index 0 \
+    --max-samples 200 \
+    --workers 4
+```
+
+### 输出
+
+默认输出目录（批量）：
+
+```
+output/batch_attack/<backbone>/<datadir>/
+├── sample_000000/
+│   ├── summary.json
+│   ├── summary.txt
+│   ├── attack_log.txt
+│   └── ...
+├── sample_000001/
+│   └── ...
+├── batch_report.json
+├── batch_report.csv
+└── batch_report.md
+```
+
+### 实时进度输出
+
+终端使用 `tqdm` 进度条，并实时显示：
+
+- `done`：已处理样本数
+- `success`：已成功攻击样本数
+- `error`：异常样本数
+- `succ_rate`：当前成功率
+- `avg_q`：当前平均查询次数
+- `avg_px`：当前平均修改像素点数量
+- `elapsed_s`：累计总用时
+- `avg_dur_s`：样本平均耗时
+- `spd`：当前吞吐（样本/秒）
 
 ```
 output/attack/resnet50/
