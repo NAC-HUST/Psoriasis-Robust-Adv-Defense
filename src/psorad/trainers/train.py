@@ -3,10 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
+import paddle
 import pandas as pd
-import torch
-from torch import Tensor, nn
-from torch.optim import AdamW
+from paddle import nn
 from tqdm import tqdm
 
 from psorad.data.dataset import build_loaders, split_manifest
@@ -26,11 +25,9 @@ class TrainConfig:
     seed: int = 42
     num_workers: int = 2
     image_size: int = 224
-    pretrained_resnet_path: str = "model/pretrained_model/resnet/resnet50_imagenet1k_v2.pth"
-    pretrained_siglip_dir: str = "model/pretrained_model/siglip"
+    pretrained_resnet_path: str = "model/pretrained_model/resnet/resnet50_imagenet1k_v1.pdparams"
     output_dir: str = "model/trained_classifier"
-    model_name: str = "best_classifier.pt"
-    freeze_siglip_backbone: bool = True
+    model_name: str = "best_classifier.pdparams"
 
 
 def _resolve_model_name(model_name: str) -> str:
@@ -38,31 +35,28 @@ def _resolve_model_name(model_name: str) -> str:
     if not filename:
         raise ValueError("model_name 不能为空")
     if Path(filename).suffix == "":
-        filename = f"{filename}.pt"
+        filename = f"{filename}.pdparams"
     return filename
 
 
-def _multiclass_accuracy(logits: Tensor, targets: Tensor) -> float:
-    """多分类准确率计算"""
-    preds = torch.argmax(logits, dim=-1)
-    targets = targets.reshape(-1)
-    correct = (preds == targets).float().mean()
+def _multiclass_accuracy(logits: paddle.Tensor, targets: paddle.Tensor) -> float:
+    preds = paddle.argmax(logits, axis=-1)
+    targets = targets.reshape([-1])
+    correct = (preds == targets).astype("float32").mean()
     return float(correct.item())
 
 
-def _evaluate(model: nn.Module, loader: torch.utils.data.DataLoader[tuple[Tensor, Tensor]], criterion: nn.Module, device: torch.device) -> tuple[float, float]:
+@paddle.no_grad()
+def _evaluate(model: nn.Layer, loader: object, criterion: nn.Layer) -> tuple[float, float]:
     model.eval()
     losses: list[float] = []
     accs: list[float] = []
 
-    with torch.no_grad():
-        for images, labels in loader:
-            images = images.to(device)
-            labels = labels.to(device)
-            logits = model(images)
-            loss = criterion(logits, labels)
-            losses.append(float(loss.item()))
-            accs.append(_multiclass_accuracy(logits, labels))
+    for images, labels in loader:
+        logits = model(images)
+        loss = criterion(logits, labels)
+        losses.append(float(loss.item()))
+        accs.append(_multiclass_accuracy(logits, labels))
 
     return sum(losses) / max(len(losses), 1), sum(accs) / max(len(accs), 1)
 
@@ -81,42 +75,31 @@ def _export_split_csv(checkpoint_path: Path, train_manifest: pd.DataFrame, val_m
 
 
 def train_classifier(config: TrainConfig) -> Path:
-    set_seed(config.seed)
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if config.backbone != "resnet50":
+        raise ValueError("当前 Paddle 版本仅支持 resnet50 backbone")
 
-    # 自动检测 num_classes
+    set_seed(config.seed)
+    paddle.set_device("gpu" if paddle.device.is_compiled_with_cuda() else "cpu")
+
     manifest = pd.read_csv(config.manifest_csv)
     if "class_idx" in manifest.columns:
-        detected_num_classes = int(manifest["class_idx"].max()) + 1
-        config.num_classes = detected_num_classes
+        config.num_classes = int(manifest["class_idx"].max()) + 1
 
-    is_siglip = config.backbone == "siglip"
     train_loader, val_loader = build_loaders(
         manifest_csv=config.manifest_csv,
         batch_size=config.batch_size,
         val_ratio=config.val_ratio,
         num_workers=config.num_workers,
         image_size=config.image_size,
-        for_siglip=is_siglip,
         seed=config.seed,
     )
 
-    if config.backbone == "resnet50":
-        model = build_resnet50_classifier(config.pretrained_resnet_path, num_classes=config.num_classes)
-    elif config.backbone == "siglip":
-        from psorad.models.classifier import SiglipClassifier
-
-        model = SiglipClassifier(
-            pretrained_dir_or_id=config.pretrained_siglip_dir,
-            num_classes=config.num_classes,
-            freeze_backbone=config.freeze_siglip_backbone,
-        )
-    else:
-        raise ValueError("backbone 仅支持 resnet50 或 siglip")
-
-    model = model.to(device)
+    model = build_resnet50_classifier(config.pretrained_resnet_path, num_classes=config.num_classes)
     criterion = nn.CrossEntropyLoss()
-    optimizer = AdamW([p for p in model.parameters() if p.requires_grad], lr=config.learning_rate)
+    optimizer = paddle.optimizer.AdamW(
+        learning_rate=config.learning_rate,
+        parameters=[p for p in model.parameters() if not p.stop_gradient],
+    )
 
     save_dir = Path(config.output_dir) / config.backbone
     save_dir.mkdir(parents=True, exist_ok=True)
@@ -136,29 +119,19 @@ def train_classifier(config: TrainConfig) -> Path:
         progress = tqdm(train_loader, desc=f"[{config.backbone}] epoch {epoch}/{config.epochs}", leave=False)
 
         for images, labels in progress:
-            images = images.to(device)
-            labels = labels.to(device)
             logits = model(images)
             loss = criterion(logits, labels)
 
-            optimizer.zero_grad(set_to_none=True)
             loss.backward()
             optimizer.step()
+            optimizer.clear_grad()
 
-            progress.set_postfix(loss=f"{loss.item():.4f}")
+            progress.set_postfix(loss=f"{float(loss.item()):.4f}")
 
-        val_loss, val_acc = _evaluate(model, val_loader, criterion, device)
+        val_loss, val_acc = _evaluate(model, val_loader, criterion)
         if val_acc > best_val_acc:
             best_val_acc = val_acc
-            torch.save(
-                {
-                    "backbone": config.backbone,
-                    "state_dict": model.state_dict(),
-                    "val_acc": val_acc,
-                    "image_size": config.image_size,
-                },
-                checkpoint_path,
-            )
+            paddle.save(model.state_dict(), str(checkpoint_path))
 
         print(f"epoch={epoch} val_loss={val_loss:.4f} val_acc={val_acc:.4f}")
 

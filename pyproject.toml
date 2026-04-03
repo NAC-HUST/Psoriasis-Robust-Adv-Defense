@@ -12,15 +12,12 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "huggingface-hub>=0.35.3",
     "numpy>=2.4.3",
     "pandas>=3.0.1",
     "pillow>=12.1.1",
     "scipy>=1.17.1",
-    "torch==2.9.0",
-    "torchvision==0.24.0",
+    "paddlepaddle-gpu==3.3.0",
     "tqdm>=4.67.1",
-    "transformers>=4.57.0",
 ]
 
 [dependency-groups]
@@ -42,16 +39,14 @@ package-dir = {"" = "src"}
 where = ["src"]
 include = ["psorad*"]
 
-# 定义额外的 PyTorch CUDA 索引
 [[tool.uv.index]]
-name = "pytorch-cu130"
-url = "https://download.pytorch.org/whl/cu130"
+name = "paddle-cu130"
+url = "https://www.paddlepaddle.org.cn/packages/stable/cu130/"
 explicit = true
 
-# 指定 torch 使用 PyTorch 专用索引
 [tool.uv.sources]
-torch = { index = "pytorch-cu130" }
-torchvision = { index = "pytorch-cu130" }
+paddlepaddle-gpu = { index = "paddle-cu130" }
+
 
 # ruff
 [tool.ruff]

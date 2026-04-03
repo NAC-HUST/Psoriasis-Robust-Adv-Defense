@@ -7,9 +7,9 @@ from typing import Any, cast
 
 import numpy as np
 import pandas as pd
-import torch
+import paddle
 from PIL import Image, ImageDraw
-from torch import nn
+from paddle import nn
 
 from psorad.attack.losses import UnTargeted
 from psorad.attack.samoo_core.attack import Attack, AttackParams
@@ -157,67 +157,58 @@ def _apply_confidence_boost(
 
 
 class BinaryModelAdapter:
-    def __init__(self, model: nn.Module, device: torch.device, backbone: str):
+    def __init__(self, model: nn.Layer, device: str, backbone: str):
         self.model = model
         self.device = device
 
-        if backbone == "resnet50":
-            mean = torch.tensor([0.485, 0.456, 0.406], dtype=torch.float32, device=device)
-            std = torch.tensor([0.229, 0.224, 0.225], dtype=torch.float32, device=device)
-        elif backbone == "siglip":
-            mean = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32, device=device)
-            std = torch.tensor([0.5, 0.5, 0.5], dtype=torch.float32, device=device)
-        else:
-            raise ValueError("backbone 仅支持 resnet50 或 siglip")
+        if backbone != "resnet50":
+            raise ValueError("backbone 仅支持 resnet50")
+
+        mean = paddle.to_tensor([0.485, 0.456, 0.406], dtype="float32")
+        std = paddle.to_tensor([0.229, 0.224, 0.225], dtype="float32")
 
         self.mean = mean.view(1, 3, 1, 1)
         self.std = std.view(1, 3, 1, 1)
 
-    def _prepare_tensor(self, x: torch.Tensor | np.ndarray) -> torch.Tensor:
+    def _prepare_tensor(self, x: paddle.Tensor | np.ndarray) -> paddle.Tensor:
         tensor = x
         if isinstance(tensor, np.ndarray):
-            tensor = torch.from_numpy(tensor)
+            tensor = paddle.to_tensor(tensor, dtype="float32")
 
         if tensor.ndim == 3:
             if tensor.shape[-1] == 3:
                 tensor = tensor.permute(2, 0, 1)
             tensor = tensor.unsqueeze(0)
 
-        tensor = tensor.to(self.device, dtype=torch.float32)
-        tensor = torch.clamp(tensor, 0.0, 1.0)
+        tensor = paddle.clip(tensor.astype("float32"), 0.0, 1.0)
         return (tensor - self.mean) / self.std
 
-    @torch.no_grad()
-    def predict(self, x: torch.Tensor | np.ndarray) -> torch.Tensor:
+    @paddle.no_grad()
+    def predict(self, x: paddle.Tensor | np.ndarray) -> paddle.Tensor:
         x = self._prepare_tensor(x)
         logits = self.model(x)
-        if not isinstance(logits, torch.Tensor):
-            raise TypeError("model forward 必须返回 torch.Tensor")
-        # 现在模型直接输出 (batch, num_classes)
+        if not isinstance(logits, paddle.Tensor):
+            raise TypeError("model forward 必须返回 paddle.Tensor")
         if logits.ndim == 1:
-            # 如果还是旧的二分类输出 (batch,)，则转换为 (batch, 2)
             logits_binary = logits.reshape(-1)
-            logits = torch.stack([-logits_binary, logits_binary], dim=1)
+            logits = paddle.stack([-logits_binary, logits_binary], axis=1)
         return logits
 
-    @torch.no_grad()
-    def predict_proba(self, x: torch.Tensor | np.ndarray) -> np.ndarray:
+    @paddle.no_grad()
+    def predict_proba(self, x: paddle.Tensor | np.ndarray) -> np.ndarray:
         logits = self.predict(x)
-        probs = torch.softmax(logits, dim=-1)
-        return np.asarray(probs.detach().cpu().numpy(), dtype=np.float32).reshape(-1)
+        probs = paddle.nn.functional.softmax(logits, axis=-1)
+        return np.asarray(probs.numpy(), dtype=np.float32).reshape(-1)
 
-    @torch.no_grad()
+    @paddle.no_grad()
     def predict_binary_logit(self, x: np.ndarray) -> float:
         tensor = self._prepare_tensor(x)
         logits = self.model(tensor)
-        if not isinstance(logits, torch.Tensor):
-            raise TypeError("model forward 必须返回 torch.Tensor")
-        # 返回正类（class 1）的 logit
+        if not isinstance(logits, paddle.Tensor):
+            raise TypeError("model forward 必须返回 paddle.Tensor")
         if logits.ndim == 1:
-            # 旧的二分类模式
             logit = logits.reshape(-1)[0]
         else:
-            # 新的多分类模式，取 class 1 的 logit
             logit = logits[0, 1]
         return float(logit.item())
 
@@ -395,29 +386,43 @@ def _export_attack_artifacts(
     detail_log_path.write_text("\n".join(detailed_log_lines) + "\n", encoding="utf-8")
 
 
-def _load_checkpoint(backbone: str, checkpoint_path: str, device: torch.device) -> nn.Module:
-    ckpt = torch.load(checkpoint_path, map_location=device)
+def _load_checkpoint(backbone: str, checkpoint_path: str, device: str) -> nn.Layer:
+    ckpt = paddle.load(checkpoint_path)
 
-    # 从权重推断 num_classes
-    state_dict = ckpt["state_dict"]
-    # 找最后一层的权重，推断输出维度
-    num_classes = 2  # 默认二分类
-    for key in state_dict:
-        if "fc.weight" in key or "classifier.weight" in key:
-            num_classes = state_dict[key].shape[0]
-            break
+    state_dict = ckpt if isinstance(ckpt, dict) and "state_dict" not in ckpt else ckpt["state_dict"]
+    num_classes: int | None = None
 
-    if backbone == "resnet50":
-        model = build_resnet50_classifier(num_classes=num_classes)
-    elif backbone == "siglip":
-        from psorad.models.classifier import SiglipClassifier
+    if isinstance(ckpt, dict) and "num_classes" in ckpt:
+        try:
+            num_classes = int(ckpt["num_classes"])
+        except (TypeError, ValueError):
+            num_classes = None
 
-        model = SiglipClassifier(pretrained_dir_or_id="model/pretrained_model/siglip", num_classes=num_classes, freeze_backbone=False)
-    else:
-        raise ValueError("backbone 仅支持 resnet50 或 siglip")
+    if num_classes is None:
+        for key, tensor in state_dict.items():
+            if "fc.weight" in key or "classifier.weight" in key:
+                shape = list(tensor.shape)
+                if len(shape) == 2:
+                    num_classes = int(shape[-1])
+                break
 
-    model.load_state_dict(ckpt["state_dict"], strict=False)
-    model.to(device)
+    if num_classes is None:
+        for key, tensor in state_dict.items():
+            if "fc.bias" in key or "classifier.bias" in key:
+                shape = list(tensor.shape)
+                if len(shape) == 1:
+                    num_classes = int(shape[0])
+                break
+
+    if num_classes is None or num_classes <= 1:
+        num_classes = 2
+
+    if backbone != "resnet50":
+        raise ValueError("backbone 仅支持 resnet50")
+
+    model = build_resnet50_classifier(pretrained_weight_path=None, num_classes=num_classes)
+
+    model.set_state_dict(state_dict)
     model.eval()
     return model
 
@@ -475,8 +480,8 @@ def _load_sample_for_attack_split(
         if train_len <= 0:
             raise ValueError("训练集为空，请增大数据量或减小 val_ratio")
 
-        generator = torch.Generator().manual_seed(split_seed)
-        indices = torch.randperm(total, generator=generator).tolist()
+        rng = np.random.default_rng(split_seed)
+        indices = rng.permutation(total).tolist()
         train_indices = indices[:train_len]
         val_indices = indices[train_len:]
         selected_indices = train_indices if split_name == "train" else val_indices
@@ -548,9 +553,10 @@ def run_samoo_attack(
     seed: int = 42,
 ) -> Path:
     np.random.seed(seed)
-    torch.manual_seed(seed)
+    paddle.seed(seed)
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = "gpu" if paddle.device.is_compiled_with_cuda() else "cpu"
+    paddle.set_device(device)
     model = _load_checkpoint(backbone=backbone, checkpoint_path=checkpoint_path, device=device)
     adapter = BinaryModelAdapter(model=model, device=device, backbone=backbone)
 
@@ -598,7 +604,7 @@ def run_samoo_attack(
     )
     resolved_eps = int(resolved_hparams["eps"])
     eps_is_adaptive = bool(resolved_hparams["eps_is_adaptive"])
-    loss = UnTargeted(model=adapter, true=y_true, to_pytorch_input=True)
+    loss = UnTargeted(model=adapter, true=y_true, to_paddle_input=True)
 
     logger = AttackRunLogger()
 

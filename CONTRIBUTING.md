@@ -56,17 +56,10 @@ pre-commit run -a
 uv run main.py preprocess --datadir psoriasis_normal
 uv run main.py download-models
 uv run main.py train --backbone resnet50 --modelname resnet50 --datadir psoriasis_normal
-uv run main.py attack --backbone resnet50 --checkpoint model/trained_classifier/resnet50/best_classifier.pt
+uv run main.py attack --backbone resnet50 --checkpoint model/trained_classifier/resnet50/best_classifier.pdparams
 ```
 
-若涉及 SigLIP，请额外验证：
-
-```bash
-uv run main.py train --backbone siglip --modelname siglip --datadir psoriasis_normal
-uv run main.py attack --backbone siglip --checkpoint model/trained_classifier/siglip/best_classifier.pt
-```
-
-备注：`train` 命令中 `--backbone` 必填，`--modelname` 仅用于指定输出模型文件名。
+备注：`train` 命令中 `--backbone` 必填，当前仓库仅保留 `resnet50`，`--modelname` 仅用于指定输出模型文件名。
 
 ## 6. 提交信息建议
 
@@ -84,7 +77,7 @@ uv run main.py attack --backbone siglip --checkpoint model/trained_classifier/si
 ```text
 feat: add SAMOO runner for binary psoriasis classifier
 docs: expand README quickstart and CLI reference
-fix: lazy-load transformers for siglip path
+fix: migrate training stack to PaddlePaddle
 ```
 
 ## 7. Pull Request 清单

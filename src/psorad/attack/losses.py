@@ -3,33 +3,33 @@ from __future__ import annotations
 from typing import Protocol
 
 import numpy as np
-import torch
+import paddle
 
 
 class PredictionModel(Protocol):
-    def predict(self, x: torch.Tensor | np.ndarray) -> torch.Tensor:
+    def predict(self, x: paddle.Tensor | np.ndarray) -> paddle.Tensor:
         ...
 
 
-def to_pytorch(tensor_image: np.ndarray) -> torch.Tensor:
-    return torch.from_numpy(tensor_image).permute(2, 0, 1)
+def to_paddle(tensor_image: np.ndarray) -> paddle.Tensor:
+    return paddle.to_tensor(np.transpose(tensor_image, (2, 0, 1)), dtype="float32")
 
 
-def to_flat_numpy(preds: torch.Tensor | np.ndarray) -> np.ndarray:
-    if isinstance(preds, torch.Tensor):
-        return preds.detach().float().cpu().flatten().numpy()
+def to_flat_numpy(preds: paddle.Tensor | np.ndarray) -> np.ndarray:
+    if isinstance(preds, paddle.Tensor):
+        return np.asarray(preds.numpy(), dtype=np.float64).flatten()
     return np.asarray(preds, dtype=np.float64).flatten()
 
 
 class UnTargeted:
-    def __init__(self, model: PredictionModel, true: int, to_pytorch_input: bool = True):
+    def __init__(self, model: PredictionModel, true: int, to_paddle_input: bool = True):
         self.model = model
         self.true = int(true)
-        self.to_pytorch_input = bool(to_pytorch_input)
+        self.to_paddle_input = bool(to_paddle_input)
 
-    def _prepare_input(self, img: np.ndarray) -> torch.Tensor | np.ndarray:
-        if self.to_pytorch_input:
-            return to_pytorch(img).unsqueeze(0).to(dtype=torch.float32)
+    def _prepare_input(self, img: np.ndarray) -> paddle.Tensor | np.ndarray:
+        if self.to_paddle_input:
+            return to_paddle(img).unsqueeze(0)
         return np.expand_dims(img, axis=0)
 
     def _predict_vector(self, img: np.ndarray) -> np.ndarray:

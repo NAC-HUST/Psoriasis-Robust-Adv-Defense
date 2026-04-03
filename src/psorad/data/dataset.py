@@ -2,15 +2,15 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
-import torch
+import paddle
 from PIL import Image
-from torch import Tensor
-from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms
+from paddle.io import DataLoader, Dataset
+from paddle.vision import transforms
 
 
-class SkinDataset(Dataset[tuple[Tensor, Tensor]]):
+class SkinDataset(Dataset):
     def __init__(self, manifest_csv: str | None, transform: transforms.Compose):
         if manifest_csv is not None:
             self.manifest = pd.read_csv(manifest_csv)
@@ -29,7 +29,7 @@ class SkinDataset(Dataset[tuple[Tensor, Tensor]]):
     def __len__(self) -> int:
         return len(self.manifest)
 
-    def __getitem__(self, index: int) -> tuple[Tensor, Tensor]:
+    def __getitem__(self, index: int) -> tuple[paddle.Tensor, paddle.Tensor]:
         row = self.manifest.iloc[index]
         image_path = Path(str(row["file_path"]))
         if not image_path.exists():
@@ -39,18 +39,18 @@ class SkinDataset(Dataset[tuple[Tensor, Tensor]]):
             image = img.convert("RGB")
         image_tensor = self.transform(image)
 
-        label = torch.tensor(int(row["class_idx"]), dtype=torch.int64)
+        label = paddle.to_tensor(int(row["class_idx"]), dtype="int64")
         return image_tensor, label
 
 
-def build_transforms(image_size: int, for_siglip: bool, train: bool) -> transforms.Compose:
-    normalize = transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]) if for_siglip else transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+def build_transforms(image_size: int, train: bool) -> transforms.Compose:
+    normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     augments: list[object] = [
-        transforms.Resize(image_size, interpolation=transforms.InterpolationMode.BILINEAR),
+        transforms.Resize(size=image_size),
         transforms.CenterCrop(image_size),
     ]
     if train:
-        augments.append(transforms.RandomHorizontalFlip(p=0.5))
+        augments.append(transforms.RandomHorizontalFlip(prob=0.5))
     augments.extend([transforms.ToTensor(), normalize])
     return transforms.Compose(augments)
 
@@ -61,18 +61,17 @@ def build_loaders(
     val_ratio: float,
     num_workers: int,
     image_size: int,
-    for_siglip: bool,
     seed: int,
-) -> tuple[DataLoader[tuple[Tensor, Tensor]], DataLoader[tuple[Tensor, Tensor]]]:
+) -> tuple[DataLoader, DataLoader]:
     train_manifest, val_manifest = split_manifest(manifest_csv=manifest_csv, val_ratio=val_ratio, seed=seed)
 
-    train_dataset = SkinDataset(manifest_csv=None, transform=build_transforms(image_size=image_size, for_siglip=for_siglip, train=True))
+    train_dataset = SkinDataset(manifest_csv=None, transform=build_transforms(image_size=image_size, train=True))
     train_dataset.set_manifest(train_manifest)
-    val_dataset = SkinDataset(manifest_csv=None, transform=build_transforms(image_size=image_size, for_siglip=for_siglip, train=False))
+    val_dataset = SkinDataset(manifest_csv=None, transform=build_transforms(image_size=image_size, train=False))
     val_dataset.set_manifest(val_manifest)
 
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers, pin_memory=True)
-    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers, pin_memory=True)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=num_workers)
     return train_loader, val_loader
 
 
@@ -84,8 +83,8 @@ def split_manifest(manifest_csv: str, val_ratio: float, seed: int) -> tuple[pd.D
     if train_len <= 0:
         raise ValueError("训练集为空，请增大数据量或减小 val_ratio")
 
-    generator = torch.Generator().manual_seed(seed)
-    indices = torch.randperm(total, generator=generator).tolist()
+    rng = np.random.default_rng(seed)
+    indices = rng.permutation(total).tolist()
     train_indices = indices[:train_len]
     val_indices = indices[train_len:]
 

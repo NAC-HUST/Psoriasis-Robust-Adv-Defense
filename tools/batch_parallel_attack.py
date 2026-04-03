@@ -15,8 +15,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
+import numpy as np
 import pandas as pd
-import torch
 from tqdm import tqdm
 
 from psorad.attack.runner import run_samoo_attack
@@ -64,8 +64,8 @@ def _build_subset_dataframe(
     if train_len <= 0:
         raise ValueError("训练集为空，请增大数据量或减小 val_ratio")
 
-    generator = torch.Generator().manual_seed(split_seed)
-    indices = torch.randperm(total, generator=generator).tolist()
+    rng = np.random.default_rng(split_seed)
+    indices = rng.permutation(total).tolist()
     train_indices = indices[:train_len]
     val_indices = indices[train_len:]
     selected_indices = train_indices if split_name == "train" else val_indices
@@ -420,7 +420,7 @@ def _parse_sample_indices(raw: str | None) -> list[int] | None:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="批量并行执行 SAMOO 攻击，并生成完整统计报告")
-    parser.add_argument("--backbone", choices=["resnet50", "siglip"], required=True)
+    parser.add_argument("--backbone", choices=["resnet50"], required=True)
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--dataset-root", default="dataset")
     parser.add_argument("--datadir", default="psoriasis_normal")

@@ -21,10 +21,10 @@ def build_parser() -> argparse.ArgumentParser:
     preprocess_parser.add_argument("--processed-data-root", default=None, help="处理后数据根目录，默认 <dataset-root>/processed_data")
     preprocess_parser.add_argument("--image-size", type=int, default=224)
 
-    subparsers.add_parser("download-models", help="下载resnet50与siglip预训练模型")
+    subparsers.add_parser("download-models", help="下载resnet50预训练模型")
 
     train_parser = subparsers.add_parser("train", help="训练分类模型")
-    train_parser.add_argument("--backbone", choices=["resnet50", "siglip"], required=True)
+    train_parser.add_argument("--backbone", choices=["resnet50"], required=True)
     train_parser.add_argument("--dataset-root", default="dataset")
     train_parser.add_argument("--datadir", default="psoriasis_normal")
     train_parser.add_argument("--manifest-csv", default=None)
@@ -35,11 +35,10 @@ def build_parser() -> argparse.ArgumentParser:
     train_parser.add_argument("--seed", type=int, default=42)
     train_parser.add_argument("--num-workers", type=int, default=2)
     train_parser.add_argument("--image-size", type=int, default=224)
-    train_parser.add_argument("--modelname", default="best_classifier.pt", help="训练输出模型文件名")
-    train_parser.add_argument("--freeze-siglip-backbone", action="store_true")
+    train_parser.add_argument("--modelname", default="best_classifier.pdparams", help="训练输出模型文件名")
 
     attack_parser = subparsers.add_parser("attack", help="运行SAMOO攻击")
-    attack_parser.add_argument("--backbone", choices=["resnet50", "siglip"], required=True)
+    attack_parser.add_argument("--backbone", choices=["resnet50"], required=True)
     attack_parser.add_argument("--checkpoint", required=True)
     attack_parser.add_argument("--dataset-root", default="dataset")
     attack_parser.add_argument("--datadir", default="psoriasis_normal")
@@ -89,9 +88,8 @@ def main() -> None:
     if args.command == "download-models":
         from psorad.models.download import download_all_models
 
-        resnet_path, siglip_path = download_all_models()
+        (resnet_path,) = download_all_models()
         print(f"resnet50已下载到: {resnet_path}")
-        print(f"siglip已下载到: {siglip_path}")
         return
 
     if args.command == "train":
@@ -109,7 +107,6 @@ def main() -> None:
             num_workers=args.num_workers,
             image_size=args.image_size,
             model_name=args.modelname,
-            freeze_siglip_backbone=args.freeze_siglip_backbone,
         )
         checkpoint_path = train_classifier(config)
         print(f"训练完成，最佳模型保存至: {checkpoint_path}")

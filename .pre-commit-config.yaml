@@ -19,7 +19,7 @@ repos:
     rev: v1.7.0
     hooks:
       - id: mypy
-        additional_dependencies: [types-torch, types-pillow, types-pandas]
+        additional_dependencies: [types-pillow, types-pandas]
 
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.0

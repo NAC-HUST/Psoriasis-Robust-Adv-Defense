@@ -13,8 +13,8 @@
 1. 预处理 `dataset/raw_data/<datadir>/` 并自动识别子目录类别。
 2. 以“等比缩放 + 中心裁剪”统一为 `224x224`（不拉伸）。
 3. 输出到 `dataset/processed_data/<datadir>/` 并生成 `class_manifest.csv`。
-4. 下载两类预训练模型（ResNet50、SigLIP）。
-5. 训练多分类分类器（ResNet50 / SigLIP）。
+4. 下载 ResNet50 预训练模型。
+5. 训练多分类分类器（ResNet50，PaddlePaddle）。
 6. 在单样本上运行 SAMOO 对抗攻击并保存结果。
 
 > 说明：当前代码以 `src/psorad` 为主实现，基于[phoenixwilliams/Black-Box-Sparse-Adversarial-Attack-via-Multi-Objective-Optimisation](https://github.com/phoenixwilliams/Black-Box-Sparse-Adversarial-Attack-via-Multi-Objective-Optimisation)项目进行重构。
@@ -36,10 +36,8 @@ dataset/
 model/
 	pretrained_model/
 		resnet/
-		siglip/
 	trained_classifier/
 		resnet50/
-		siglip/
 
 src/psorad/
 	preprocess/                # 数据预处理
@@ -103,10 +101,9 @@ uv run main.py download-models
 
 默认下载到：
 
-- `model/pretrained_model/resnet/resnet50_imagenet1k_v2.pth`
-- `model/pretrained_model/siglip/`
+- `model/pretrained_model/resnet/resnet50_imagenet1k_v1.pdparams`
 
-目前已经默认使用hf-mirror镜像站进行模型的下载。
+当前实现使用 PaddlePaddle 的官方预训练权重。
 
 ### 3) 训练分类模型
 
@@ -116,28 +113,15 @@ uv run main.py download-models
 uv run main.py train \
 	--backbone resnet50 \
 	--datadir psoriasis_normal \
-	--modelname resnet50_psoriasis_v1.pt \
+	--modelname resnet50_psoriasis_v1.pdparams \
 	--epochs 3 \
 	--batch-size 16 \
 	--learning-rate 1e-4
 ```
 
-#### SigLIP
-
-```bash
-uv run main.py train \
-	--backbone siglip \
-	--datadir psoriasis_normal \
-	--modelname siglip_psoriasis_v1.pt \
-	--epochs 3 \
-	--batch-size 16 \
-	--learning-rate 1e-4 \
-	--freeze-siglip-backbone
-```
-
 输出 checkpoint：
 
-- 默认：`model/trained_classifier/<backbone>/best_classifier.pt`
+- 默认：`model/trained_classifier/<backbone>/best_classifier.pdparams`
 - 若设置 `--modelname`：`model/trained_classifier/<backbone>/<modelname>`
 
 训练同时会在同目录输出本次数据划分清单：
@@ -151,7 +135,7 @@ uv run main.py train \
 ```bash
 uv run main.py attack \
 	--backbone resnet50 \
-	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pdparams \
 	--manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
 	--datadir psoriasis_normal \
 	--sample-index 0
@@ -183,7 +167,7 @@ uv run main.py attack \
 ```bash
 uv run main.py attack \
 	--backbone resnet50 \
-	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pdparams \
 	--export-dir output/attack/attack_case_001 \
 	--no-raw-npy
 ```
@@ -193,7 +177,7 @@ uv run main.py attack \
 ```bash
 uv run python tools/batch_parallel_attack.py \
 	--backbone resnet50 \
-	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pdparams \
 	--manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
 	--datadir psoriasis_normal \
 	--attack-split val \
@@ -217,7 +201,7 @@ uv run python tools/batch_parallel_attack.py \
 ```bash
 uv run python tools/batch_parallel_attack.py \
 	--backbone resnet50 \
-	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pdparams \
 	--datadir psoriasis_normal \
 	--run-name run_20260331_1
 ```
@@ -234,24 +218,23 @@ uv run python tools/batch_parallel_attack.py \
 
 ### download-models
 
-- 无必填参数，默认下载 ResNet50 与 SigLIP。
+- 无必填参数，默认下载 ResNet50。
 
 ### train
 
-- `--backbone`：`resnet50` 或 `siglip`（必填）
+- `--backbone`：`resnet50`（必填）
 - `--datadir`：默认读取 `dataset/processed_data/<datadir>/class_manifest.csv`
 - `--manifest-csv`：手动指定清单（优先级高于 `--datadir`）
-- `--modelname`：训练输出模型文件名（默认 `best_classifier.pt`）
+- `--modelname`：训练输出模型文件名（默认 `best_classifier.pdparams`）
 - `--epochs` / `--batch-size` / `--learning-rate`
 - `--val-ratio`：验证集比例
 - `--seed`：随机种子
 - `--num-workers`：DataLoader worker 数
 - `--image-size`：输入尺寸（默认 224）
-- `--freeze-siglip-backbone`：仅对 SigLIP 生效
 
 ### attack
 
-- `--backbone`：`resnet50` 或 `siglip`（必填）
+- `--backbone`：`resnet50`（必填）
 - `--checkpoint`：训练好的 checkpoint（必填）
 - `--datadir`：默认读取 `dataset/processed_data/<datadir>/class_manifest.csv`
 - `--manifest-csv`：手动指定清单（优先级高于 `--datadir`）
@@ -288,9 +271,9 @@ uv run python tools/batch_parallel_attack.py \
 
 ## 常见问题
 
-### 1) `ModuleNotFoundError: transformers`
+### 1) 训练或下载模型失败
 
-SigLIP 路径依赖 `transformers`。请确认环境安装了项目依赖，或先使用 ResNet50 流程。
+请确认环境已安装 PaddlePaddle，并优先使用 ResNet50 流程。
 
 ### 2) `manifest 为空`
 
@@ -302,7 +285,7 @@ SigLIP 路径依赖 `transformers`。请确认环境安装了项目依赖，或�
 
 ### 3) checkpoint 加载失败
 
-请确保 `--backbone` 与 checkpoint 对应一致（例如 ResNet50 checkpoint 不可用于 SigLIP）。
+请确保 `--backbone` 与 checkpoint 对应一致。
 
 ### 4) 攻击结果 `success=False`
 
