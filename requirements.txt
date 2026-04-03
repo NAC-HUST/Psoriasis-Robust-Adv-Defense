@@ -1,0 +1,14 @@
+# 基础依赖
+numpy
+pandas
+pillow
+scipy
+tqdm
+
+# PaddlePaddle GPU 
+paddlepaddle-gpu==3.3.0
+
+# 开发依赖 
+mypy
+pytest
+ruff
