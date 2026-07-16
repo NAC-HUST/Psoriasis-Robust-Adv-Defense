@@ -44,8 +44,7 @@ model/
 src/psorad/
 	preprocess/                # 数据预处理
 	data/                      # Dataset / DataLoader
-	models/                    # 下载与模型构建
-	trainers/                  # 分类器训练
+	models/                    # 模型构建、工厂、训练（train.py）
 	attack/                    # SAMOO 攻击
 ```
 
