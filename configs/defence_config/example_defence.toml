@@ -1,0 +1,36 @@
+## Defence config catalog（对抗防御）
+# 面向 Phase 3 计划中的 defense/ 模块（当前为骨架配置，字段将逐步接线）。
+# 起步方法为对抗训练（adversarial training）：在训练循环中注入对抗样本以提升鲁棒性。
+# 基础 backbone / 训练超参复用 model_config/baseline_model.toml，本文件仅描述防御专属项。
+
+[Defense]
+
+# --- 必填：防御方法 ---
+method = "adv_training"                                 # adv_training | (后续可扩展: trades / randomized_smoothing 等)
+
+# --- 必填：基础模型（与 model_config 对齐）---
+backbone = "resnet50"                                   # resnet50 | siglip
+model_config = "configs/model_config/baseline_model.toml"  # 复用的训练/模型配置
+num_classes = 2                                         # 分类数
+
+# --- 对抗训练超参 ---
+[Defense.adv_training]
+epsilon = 0.03137                                       # 扰动预算（8/255，L_inf）
+steps = 7                                               # 内层 PGD 迭代步数
+step_size = 0.00784                                     # 单步步长（2/255）
+ratio = 0.5                                             # 每 batch 中对抗样本占比
+norm = "linf"                                           # linf | l2，扰动范数
+random_start = true                                     # PGD 是否随机初始化扰动
+
+# --- 数据来源（manifest 式）---
+[Defense.data]
+datadir = "psoriasis_normal"                            # processed_data 下的数据集目录名
+manifest_csv = "dataset/processed_data/psoriasis_normal/class_manifest.csv"  # 样本清单 CSV
+val_ratio = 0.2                                         # 训练/验证划分比例
+split_seed = 42                                         # 划分随机种子
+image_size = 224                                        # 输入分辨率
+
+# --- 输出 ---
+[Output]
+output_dir = "model/trained_classifier/resnet50_adv"    # 鲁棒模型权重输出目录
+model_name = "robust_classifier.pt"                     # 权重文件名

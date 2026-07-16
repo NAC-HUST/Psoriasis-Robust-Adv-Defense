@@ -1,0 +1,33 @@
+## Eval config catalog（攻防评估）
+# 面向 Phase 3 计划中的 `psorad evaluate` 子命令（当前为骨架配置，字段将逐步接线）。
+# 评估分两类来源：
+#   1) 干净样本指标（clean）：直接对 manifest 中的样本前向推理。
+#   2) 鲁棒性指标（robust / ASR）：读取 tools/batch_parallel_attack.py 产出的 batch_report。
+
+[Eval]
+
+# --- 必填：待评估模型 ---
+backbone = "resnet50"                                   # resnet50 | siglip
+checkpoint = "model/trained_classifier/resnet50/best_classifier.pt"  # 分类器权重
+
+# --- 必填：数据来源（manifest 式，用于 clean 指标）---
+datadir = "psoriasis_normal"                            # processed_data 下的数据集目录名
+manifest_csv = "dataset/processed_data/psoriasis_normal/class_manifest.csv"  # 样本清单 CSV
+split = "val"                                           # all | train | val，评估所用子集
+val_ratio = 0.2                                         # manifest 无 split 列时重建 train/val
+split_seed = 42                                         # 无 split 列时的划分随机种子
+image_size = 224                                        # 输入分辨率
+
+# --- 评估指标 ---
+# acc/f1/auc 属于 clean 指标；asr（攻击成功率）与 robust_acc 依赖 batch_report。
+metrics = ["acc", "f1", "auc", "asr"]                   # 需要计算的指标集合
+
+# --- 鲁棒性评估：批量攻击结果入口 ---
+[Eval.robust]
+batch_report = "output/attack/resnet50/batch_report.json"  # 批量攻击聚合报告路径
+report_format = "json"                                  # json | csv，读取 batch_report 的格式
+
+# --- 输出 ---
+[Output]
+output_dir = "output/eval/resnet50"                     # 评估报告输出目录
+report_name = "eval_report.json"                        # 评估结果文件名
