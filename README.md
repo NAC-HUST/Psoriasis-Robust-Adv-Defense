@@ -221,6 +221,34 @@ uv run python tools/batch_parallel_attack.py \
 	--run-name run_20260331_1
 ```
 
+### 5) 评估（clean 指标 + 鲁棒性汇总）
+
+`evaluate` 子命令对某个划分做干净前向推理并计算指标，同时可读取批量攻击报告汇总鲁棒性（ASR / robust_acc / 扰动统计）。
+
+```bash
+uv run main.py evaluate \
+	--backbone resnet50 \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
+	--split val \
+	--batch-report output/batch_attack/resnet50/psoriasis_normal/batch_report.json \
+	--output-dir output/eval/resnet50
+```
+
+也可用配置文件驱动（优先于显式参数）：
+
+```bash
+uv run main.py evaluate --config configs/eval_config/baseline_eval.toml
+```
+
+说明：
+
+- Clean 指标：accuracy、macro precision/recall/f1、per-class f1、AUC、混淆矩阵。
+- Robust 指标：来自 `batch_report.json` 的 ASR（成功率）、robust_acc（子集内 = 1 - ASR）、queries/l2/linf/modified_pixels 的 mean/median/p90、per-class 成功率。
+- 输出 `output/eval/<backbone>/eval_report.json` 与同名 `.md`（便于展示）。
+- 若不提供 `--batch-report`（或文件缺失），鲁棒性部分标记为不可用，不报错。
+- 加 `--skip-clean` 可跳过前向推理，仅汇总鲁棒性指标。
+
 ## CLI 参数速查
 
 ### preprocess
@@ -269,6 +297,21 @@ uv run python tools/batch_parallel_attack.py \
 - 当原图置信度极高（如 `true_class_conf >= 0.995`）且未手动指定核心参数时，攻击器会自动上调 `eps/query-budget/pop-size`，提高跨越决策边界的概率。
 - `--include-dist` + `--max-dist`：是否启用距离约束筛选
 - `--seed`：随机种子
+
+### evaluate
+
+- `--config`：评估配置 TOML（优先于以下显式参数）
+- `--backbone`：底模（`resnet50` / `siglip`，默认 `resnet50`）
+- `--checkpoint`：分类器权重路径（不使用 `--config` 时必填）
+- `--dataset-root` / `--datadir`：默认读取 `dataset/processed_data/<datadir>/class_manifest.csv`
+- `--manifest-csv`：手动指定清单（优先级高于 `--datadir`）
+- `--split`：评估划分（`all` / `train` / `val`，默认 `val`）
+- `--val-ratio` / `--split-seed`：当清单不含 `split` 列时，用于重建划分
+- `--image-size` / `--batch-size` / `--num-workers`：前向推理参数
+- `--batch-report`：批量攻击报告 `batch_report.json` 路径（用于汇总鲁棒性）
+- `--output-dir`：报告输出目录（默认 `output/eval`）
+- `--report-name`：报告文件名（默认 `eval_report.json`，同名生成 `.md`）
+- `--skip-clean`：跳过 clean 前向推理，仅汇总鲁棒性
 
 ### tools/batch_parallel_attack.py
 

@@ -67,6 +67,24 @@ def build_parser() -> argparse.ArgumentParser:
     attack_parser.add_argument("--tournament-size", type=int, default=None, help="锦标赛选择规模；不传时按分辨率预设")
     attack_parser.add_argument("--seed", type=int, default=42)
 
+    evaluate_parser = subparsers.add_parser("evaluate", help="评估分类器：clean 指标 + 从批量攻击报告读取 robust/ASR")
+    evaluate_parser.add_argument("--config", default=None, help="评估配置 TOML 路径（优先于以下显式参数）")
+    evaluate_parser.add_argument("--backbone", choices=["resnet50", "siglip"], default="resnet50")
+    evaluate_parser.add_argument("--checkpoint", default=None, help="待评估分类器权重")
+    evaluate_parser.add_argument("--dataset-root", default="dataset")
+    evaluate_parser.add_argument("--datadir", default="psoriasis_normal")
+    evaluate_parser.add_argument("--manifest-csv", default=None)
+    evaluate_parser.add_argument("--split", choices=["all", "train", "val"], default="val", help="评估所用子集")
+    evaluate_parser.add_argument("--val-ratio", type=float, default=0.2)
+    evaluate_parser.add_argument("--split-seed", type=int, default=42)
+    evaluate_parser.add_argument("--image-size", type=int, default=224)
+    evaluate_parser.add_argument("--batch-size", type=int, default=32)
+    evaluate_parser.add_argument("--num-workers", type=int, default=2)
+    evaluate_parser.add_argument("--batch-report", default=None, help="批量攻击报告 batch_report.json 路径（robust 指标来源）")
+    evaluate_parser.add_argument("--output-dir", default="output/eval", help="评估报告输出目录")
+    evaluate_parser.add_argument("--report-name", default="eval_report.json", help="评估报告文件名")
+    evaluate_parser.add_argument("--skip-clean", action="store_true", help="跳过 clean 前向推理，仅汇总 robust 指标")
+
     return parser
 
 
@@ -158,3 +176,39 @@ def main() -> None:
         )
         print(f"SAMOO攻击完成，文本与图像结果保存至: {output}")
         return
+
+    if args.command == "evaluate":
+        from psorad.eval import run_evaluate
+
+        if args.config is not None:
+            from psorad.config import load_eval_config
+
+            eval_cfg = load_eval_config(args.config)
+        else:
+            from psorad.config import EvalConfig
+
+            if args.checkpoint is None:
+                parser.error("evaluate 需要 --checkpoint（或改用 --config）")
+            manifest_csv = _resolve_manifest_csv(args.manifest_csv, datadir=args.datadir, dataset_root=args.dataset_root)
+            eval_cfg = EvalConfig(
+                backbone=args.backbone,
+                checkpoint=args.checkpoint,
+                manifest_csv=manifest_csv,
+                split=args.split,
+                val_ratio=args.val_ratio,
+                split_seed=args.split_seed,
+                image_size=args.image_size,
+                batch_size=args.batch_size,
+                num_workers=args.num_workers,
+                batch_report=args.batch_report,
+                output_dir=Path(args.output_dir),
+                report_name=args.report_name,
+            )
+
+        report_path = run_evaluate(eval_cfg, skip_clean=args.skip_clean)
+        print(f"评估完成，报告已保存至: {report_path}")
+        return
+
+
+if __name__ == "__main__":
+    main()
