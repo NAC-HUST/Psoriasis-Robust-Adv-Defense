@@ -9,10 +9,9 @@ from torch import Tensor, nn
 from torch.optim import AdamW
 from tqdm import tqdm
 
-from psorad.data.dataset import build_loaders, split_manifest
-from psorad.data.dataset import build_split_loaders
+from psorad.config import ExperimentConfig, ModelConfig
+from psorad.data.dataset import build_loaders, build_split_loaders, split_manifest
 from psorad.models.factory import build_model
-from psorad.config import ModelConfig
 from psorad.utils.seed import set_seed
 
 
@@ -111,7 +110,7 @@ def train_classifier(config: TrainConfig) -> Path:
     else:
         pretrained = None
 
-    model_cfg = ModelConfig(backbone=config.backbone, pretrained_path=pretrained, freeze_backbone=config.freeze_siglip_backbone, num_classes=config.num_classes)
+    model_cfg = ModelConfig(backbone=config.backbone, pretrained_path=Path(pretrained) if pretrained else None, freeze_backbone=config.freeze_siglip_backbone, num_classes=config.num_classes)
     model = build_model(model_cfg, num_classes=config.num_classes)
 
     model = model.to(device)
@@ -165,7 +164,7 @@ def train_classifier(config: TrainConfig) -> Path:
     return checkpoint_path
 
 
-def train_experiment(exp_cfg: "ExperimentConfig") -> Path:
+def train_experiment(exp_cfg: ExperimentConfig) -> Path:
     """Run training using an ExperimentConfig loaded from TOML (split_data style).
 
     This function keeps the same high-level behavior as train_classifier but reads data
