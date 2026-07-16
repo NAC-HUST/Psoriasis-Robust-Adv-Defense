@@ -27,6 +27,12 @@ metrics = ["acc", "f1", "auc", "asr"]                   # 需要计算的指标�
 batch_report = "output/attack/resnet50/batch_report.json"  # 批量攻击聚合报告路径
 report_format = "json"                                  # json | csv，读取 batch_report 的格式
 
+# --- 脆弱性分析（选填）---
+[Eval.vulnerability]
+grid_size = 7                                           # 空间网格划分（grid_size×grid_size）
+high_freq_cutoff = 0.25                                 # FFT 高频截止比例（相对于最大半径）
+save_visuals = false                                     # 是否保存空间热图 PNG
+
 # --- 输出 ---
 [Output]
 output_dir = "output/eval/resnet50"                     # 评估报告输出目录

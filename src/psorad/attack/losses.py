@@ -7,8 +7,7 @@ import torch
 
 
 class PredictionModel(Protocol):
-    def predict(self, x: torch.Tensor | np.ndarray) -> torch.Tensor:
-        ...
+    def predict(self, x: torch.Tensor | np.ndarray) -> torch.Tensor: ...
 
 
 def to_pytorch(tensor_image: np.ndarray) -> torch.Tensor:

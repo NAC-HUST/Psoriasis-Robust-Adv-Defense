@@ -8,4 +8,3 @@ __all__ = [
     "build_model",
     "available_backbones",
 ]
-

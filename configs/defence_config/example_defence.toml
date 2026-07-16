@@ -1,36 +1,24 @@
-## Defence config catalog（对抗防御）
-# 面向 Phase 3 计划中的 defense/ 模块（当前为骨架配置，字段将逐步接线）。
-# 起步方法为对抗训练（adversarial training）：在训练循环中注入对抗样本以提升鲁棒性。
-# 基础 backbone / 训练超参复用 model_config/baseline_model.toml，本文件仅描述防御专属项。
+## Defence config —— 高低频 + 区域感知净化防御
+# 测试时输入净化，无需重训练。只替换可疑像素为低频重建，保留干净区域。
+#
+# 用法：python main.py defend --config configs/defence_config/example_defence.toml
 
 [Defense]
 
-# --- 必填：防御方法 ---
-method = "adv_training"                                 # adv_training | (后续可扩展: trades / randomized_smoothing 等)
+method = "freq_region_purify"                   # 固定方法名
+backbone = "resnet50"                            # resnet50 | siglip
+checkpoint = "model/trained_classifier/resnet50/resnet50_psoriasis224_2c.pt"  # 被攻击的分类器
+batch_report = "output/batch_attack/resnet50/psoriasis224_2c/batch_report.json"  # 批量攻击结果
 
-# --- 必填：基础模型（与 model_config 对齐）---
-backbone = "resnet50"                                   # resnet50 | siglip
-model_config = "configs/model_config/baseline_model.toml"  # 复用的训练/模型配置
-num_classes = 2                                         # 分类数
+[Defense.purify]
 
-# --- 对抗训练超参 ---
-[Defense.adv_training]
-epsilon = 0.03137                                       # 扰动预算（8/255，L_inf）
-steps = 7                                               # 内层 PGD 迭代步数
-step_size = 0.00784                                     # 单步步长（2/255）
-ratio = 0.5                                             # 每 batch 中对抗样本占比
-norm = "linf"                                           # linf | l2，扰动范数
-random_start = true                                     # PGD 是否随机初始化扰动
+window = 3                                       # 局部中值窗口（用于 mask 判定与 median 重建）
+threshold = 0.08                                  # 可疑像素偏离阈值（像素范围 0~1）
+dilation = 1                                      # 可疑区域膨胀半径
+low_freq_cutoff = 0.25                            # FFT 低频重建的截止频率比例
+low_freq = "fft"                                  # 低频重建方式：fft | median
 
-# --- 数据来源（manifest 式）---
-[Defense.data]
-datadir = "psoriasis_normal"                            # processed_data 下的数据集目录名
-manifest_csv = "dataset/processed_data/psoriasis_normal/class_manifest.csv"  # 样本清单 CSV
-val_ratio = 0.2                                         # 训练/验证划分比例
-split_seed = 42                                         # 划分随机种子
-image_size = 224                                        # 输入分辨率
-
-# --- 输出 ---
 [Output]
-output_dir = "model/trained_classifier/resnet50_adv"    # 鲁棒模型权重输出目录
-model_name = "robust_classifier.pt"                     # 权重文件名
+
+output_dir = "output/defense"                     # 防御报告输出根目录
+report_name = "defense_report.json"               # 报告文件名

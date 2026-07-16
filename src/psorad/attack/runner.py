@@ -599,12 +599,7 @@ def run_samoo_attack(
     logger = AttackRunLogger()
 
     model_name = Path(checkpoint_path).stem
-    default_run_dir = (
-        Path("output")
-        / "attack"
-        / _safe_path_token(backbone)
-        / f"{_safe_path_token(datadir)}-{_safe_path_token(model_name)}-{sample_index}"
-    )
+    default_run_dir = Path("output") / "attack" / _safe_path_token(backbone) / f"{_safe_path_token(datadir)}-{_safe_path_token(model_name)}-{sample_index}"
 
     if save_path is None and export_dir is None:
         save_file = default_run_dir / "samoo_result.npy"
@@ -659,11 +654,7 @@ def run_samoo_attack(
     def _progress_callback(event: dict[str, Any]) -> None:
         phase = str(event.get("phase", "unknown"))
         if phase == "init_population_start":
-            logger.log(
-                "[Process] 初始化种群: "
-                f"image={event.get('height')}x{event.get('width')}, eps={event.get('eps')}, "
-                f"pop_size={event.get('pop_size')}, zero_prob={event.get('zero_probability')}, p_size={event.get('p_size')}"
-            )
+            logger.log(f"[Process] 初始化种群: image={event.get('height')}x{event.get('width')}, eps={event.get('eps')}, pop_size={event.get('pop_size')}, zero_prob={event.get('zero_probability')}, p_size={event.get('p_size')}")
         elif phase == "init_population_done":
             logger.log(f"[Process] 初始种群评估完成: population_size={event.get('population_size')}")
         elif phase == "attack_start":
@@ -674,40 +665,17 @@ def run_samoo_attack(
                 f"max_dist={event.get('max_dist')}, initial_queries={event.get('query_count')}, query_budget={event.get('query_budget')}"
             )
         elif phase == "iteration":
-            logger.log(
-                "[Process] 迭代进度: "
-                f"iter={event.get('iteration')}/{event.get('total_iterations')}, "
-                f"queries={event.get('query_count')}, feasible={event.get('feasible_count')}, "
-                f"best_loss={event.get('best_loss'):.6f}"
-            )
+            logger.log(f"[Process] 迭代进度: iter={event.get('iteration')}/{event.get('total_iterations')}, queries={event.get('query_count')}, feasible={event.get('feasible_count')}, best_loss={event.get('best_loss'):.6f}")
         elif phase == "generation_operators":
-            logger.log(
-                "[Process] 进化算子: "
-                f"iter={event.get('iteration')}, parents_pairs={event.get('parents_pairs')}, "
-                f"children={event.get('children')}, pm_current={event.get('pm_current')}, post_queries={event.get('post_query_count')}"
-            )
+            logger.log(f"[Process] 进化算子: iter={event.get('iteration')}, parents_pairs={event.get('parents_pairs')}, children={event.get('children')}, pm_current={event.get('pm_current')}, post_queries={event.get('post_query_count')}")
         elif phase == "query_budget_reached":
-            logger.log(
-                "[Process] 达到查询预算，提前停止: "
-                f"iter={event.get('iteration')}, queries={event.get('query_count')}, budget={event.get('query_budget')}"
-            )
+            logger.log(f"[Process] 达到查询预算，提前停止: iter={event.get('iteration')}, queries={event.get('query_count')}, budget={event.get('query_budget')}")
         elif phase == "early_success":
-            logger.log(
-                "[Process] 提前命中可行对抗解: "
-                f"iter={event.get('iteration')}, feasible={event.get('feasible_count')}, queries={event.get('query_count')}"
-            )
+            logger.log(f"[Process] 提前命中可行对抗解: iter={event.get('iteration')}, feasible={event.get('feasible_count')}, queries={event.get('query_count')}")
         elif phase == "attack_end":
-            logger.log(
-                "[Process] 进化结束: "
-                f"success={event.get('success')}, queries={event.get('query_count')}, "
-                f"query_budget={event.get('query_budget')}, best_loss={event.get('best_loss'):.6f}"
-            )
+            logger.log(f"[Process] 进化结束: success={event.get('success')}, queries={event.get('query_count')}, query_budget={event.get('query_budget')}, best_loss={event.get('best_loss'):.6f}")
 
-    logger.log(
-        "[Model] 原图预测: "
-        f"pred_before=class_{pred_before}, conf={float(probs_before[pred_before]):.6f}, "
-        f"true_class_conf={float(probs_before[y_true]):.6f}"
-    )
+    logger.log(f"[Model] 原图预测: pred_before=class_{pred_before}, conf={float(probs_before[pred_before]):.6f}, true_class_conf={float(probs_before[y_true]):.6f}")
     logger.log(f"[Model] 原图 Top-K 置信度: {_format_topk_probs(probs_before, k=5)}")
 
     attacker = Attack(params, progress_callback=_progress_callback)
@@ -727,19 +695,10 @@ def run_samoo_attack(
     success = bool(pred_after != y_true)
 
     logger.log("[Result] 攻击完成")
-    logger.log(
-        f"[Result] 结果: success={success}, queries={queries}, selected_front0_index={selected_idx}, "
-        f"modified_pixels={modified_pixel_count}, modified_channels={modified_channel_count}"
-    )
-    logger.log(
-        "[Model] 对抗图预测: "
-        f"pred_after=class_{pred_after}, conf={float(probs_after[pred_after]):.6f}, "
-        f"true_class_conf={float(probs_after[y_true]):.6f}"
-    )
+    logger.log(f"[Result] 结果: success={success}, queries={queries}, selected_front0_index={selected_idx}, modified_pixels={modified_pixel_count}, modified_channels={modified_channel_count}")
+    logger.log(f"[Model] 对抗图预测: pred_after=class_{pred_after}, conf={float(probs_after[pred_after]):.6f}, true_class_conf={float(probs_after[y_true]):.6f}")
     logger.log(f"[Model] 对抗图 Top-K 置信度: {_format_topk_probs(probs_after, k=5)}")
-    logger.log(
-        f"[Model] 二分类读数(兼容字段): logit_before={logit_before:.6f}, logit_after={logit_after:.6f}"
-    )
+    logger.log(f"[Model] 二分类读数(兼容字段): logit_before={logit_before:.6f}, logit_after={logit_after:.6f}")
     logger.log(f"[Output] 结果目录: {export_path}")
     logger.log("=" * 80)
 

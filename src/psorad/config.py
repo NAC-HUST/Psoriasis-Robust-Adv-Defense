@@ -128,8 +128,26 @@ class EvalConfig:
     num_workers: int = 2
     metrics: tuple[str, ...] = ("acc", "f1", "auc", "asr")
     batch_report: str | None = None
+    grid_size: int = 7
+    high_freq_cutoff: float = 0.25
+    save_visuals: bool = False
     output_dir: Path = Path("output/eval")
     report_name: str = "eval_report.json"
+    extra: dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class DefenseConfig:
+    backbone: str
+    checkpoint: str
+    batch_report: str
+    window: int = 3
+    threshold: float = 0.08
+    dilation: int = 1
+    low_freq_cutoff: float = 0.25
+    low_freq: str = "fft"
+    output_dir: Path = Path("output/defense")
+    report_name: str = "defense_report.json"
     extra: dict[str, Any] = field(default_factory=dict)
 
 
@@ -389,6 +407,9 @@ _EVAL_KNOWN_KEYS = {
     "batch_size",
     "num_workers",
     "metrics",
+    "grid_size",
+    "high_freq_cutoff",
+    "save_visuals",
 }
 
 
@@ -420,13 +441,19 @@ def load_eval_config(path: str | Path) -> EvalConfig:
         robust_section = {}
     batch_report = robust_section.get("batch_report")
 
+    vuln_section = section.get("vulnerability", {})
+    if not isinstance(vuln_section, dict):
+        vuln_section = {}
+
     output_section = data.get("Output", data.get("output", {}))
     if not isinstance(output_section, dict):
         output_section = {}
 
-    extra: dict[str, Any] = {key: value for key, value in section.items() if key not in _EVAL_KNOWN_KEYS and key != "robust"}
+    extra: dict[str, Any] = {key: value for key, value in section.items() if key not in _EVAL_KNOWN_KEYS and key not in ("robust", "vulnerability")}
     if robust_section:
         extra["robust"] = robust_section
+    if vuln_section:
+        extra["vulnerability"] = vuln_section
     if output_section:
         extra["output"] = output_section
 
@@ -442,7 +469,74 @@ def load_eval_config(path: str | Path) -> EvalConfig:
         num_workers=int(section.get("num_workers", 2)),
         metrics=tuple(str(item) for item in _as_tuple(section.get("metrics", ("acc", "f1", "auc", "asr")))),
         batch_report=str(batch_report) if batch_report is not None else None,
+        grid_size=int(vuln_section.get("grid_size", 7)) if vuln_section.get("grid_size") is not None else 7,
+        high_freq_cutoff=float(vuln_section.get("high_freq_cutoff", 0.25)),
+        save_visuals=bool(vuln_section.get("save_visuals", False)),
         output_dir=_to_path(output_section.get("output_dir", "output/eval"), base_dir=config_path.parent) or Path("output/eval"),
         report_name=str(output_section.get("report_name", "eval_report.json")),
+        extra=extra,
+    )
+
+
+_DEFENSE_KNOWN_KEYS = {
+    "method",
+    "backbone",
+    "checkpoint",
+    "batch_report",
+    "window",
+    "threshold",
+    "dilation",
+    "low_freq_cutoff",
+    "low_freq",
+}
+
+
+def load_defense_config(path: str | Path) -> DefenseConfig:
+    """加载防御配置（configs/defence_config/*.toml）。
+
+    读取 [Defense]（backbone/checkpoint/batch_report）、[Defense.purify]（净化超参）、[Output]。
+    """
+    config_path = Path(path)
+    data = tomllib.loads(config_path.read_text(encoding="utf-8"))
+
+    section = data.get("Defense", data.get("defense"))
+    if not isinstance(section, dict):
+        raise ValueError("defense config 缺少 [Defense] 表")
+
+    backbone = str(section.get("backbone", "")).strip()
+    if not backbone:
+        raise ValueError("[Defense] 缺少 backbone")
+    checkpoint = str(section.get("checkpoint", "")).strip()
+    if not checkpoint:
+        raise ValueError("[Defense] 缺少 checkpoint")
+    batch_report = str(section.get("batch_report", "")).strip()
+    if not batch_report:
+        raise ValueError("[Defense] 缺少 batch_report")
+
+    purify_section = section.get("purify", {})
+    if not isinstance(purify_section, dict):
+        purify_section = {}
+
+    output_section = data.get("Output", data.get("output", {}))
+    if not isinstance(output_section, dict):
+        output_section = {}
+
+    extra: dict[str, Any] = {key: value for key, value in section.items() if key not in _DEFENSE_KNOWN_KEYS and key != "purify"}
+    if purify_section:
+        extra["purify"] = purify_section
+    if output_section:
+        extra["output"] = output_section
+
+    return DefenseConfig(
+        backbone=backbone,
+        checkpoint=checkpoint,
+        batch_report=batch_report,
+        window=int(purify_section.get("window", 3)) if purify_section.get("window") is not None else 3,
+        threshold=float(purify_section.get("threshold", 0.08)),
+        dilation=int(purify_section.get("dilation", 1)) if purify_section.get("dilation") is not None else 1,
+        low_freq_cutoff=float(purify_section.get("low_freq_cutoff", 0.25)),
+        low_freq=str(purify_section.get("low_freq", "fft")),
+        output_dir=_to_path(output_section.get("output_dir", "output/defense"), base_dir=config_path.parent) or Path("output/defense"),
+        report_name=str(output_section.get("report_name", "defense_report.json")),
         extra=extra,
     )

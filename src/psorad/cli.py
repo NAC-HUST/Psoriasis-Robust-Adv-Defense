@@ -81,9 +81,25 @@ def build_parser() -> argparse.ArgumentParser:
     evaluate_parser.add_argument("--batch-size", type=int, default=32)
     evaluate_parser.add_argument("--num-workers", type=int, default=2)
     evaluate_parser.add_argument("--batch-report", default=None, help="批量攻击报告 batch_report.json 路径（robust 指标来源）")
+    evaluate_parser.add_argument("--grid-size", type=int, default=7, help="空间脆弱性网格大小")
+    evaluate_parser.add_argument("--high-freq-cutoff", type=float, default=0.25, help="频域分析高频截止比例")
+    evaluate_parser.add_argument("--save-visuals", action="store_true", help="保存脆弱性可视化热图")
     evaluate_parser.add_argument("--output-dir", default="output/eval", help="评估报告输出目录")
     evaluate_parser.add_argument("--report-name", default="eval_report.json", help="评估报告文件名")
     evaluate_parser.add_argument("--skip-clean", action="store_true", help="跳过 clean 前向推理，仅汇总 robust 指标")
+
+    defend_parser = subparsers.add_parser("defend", help="高低频+区域感知净化防御")
+    defend_parser.add_argument("--config", default=None, help="防御配置 TOML 路径（优先）")
+    defend_parser.add_argument("--backbone", choices=["resnet50", "siglip"], default="resnet50")
+    defend_parser.add_argument("--checkpoint", required=True)
+    defend_parser.add_argument("--batch-report", required=True)
+    defend_parser.add_argument("--window", type=int, default=3, help="局部中值窗口")
+    defend_parser.add_argument("--threshold", type=float, default=0.08, help="可疑像素阈值")
+    defend_parser.add_argument("--dilation", type=int, default=1, help="区域膨胀半径")
+    defend_parser.add_argument("--low-freq-cutoff", type=float, default=0.25, help="FFT低频截止")
+    defend_parser.add_argument("--low-freq", choices=["fft", "median"], default="fft", help="低频重建方式")
+    defend_parser.add_argument("--output-dir", default="output/defense")
+    defend_parser.add_argument("--report-name", default="defense_report.json")
 
     return parser
 
@@ -201,12 +217,42 @@ def main() -> None:
                 batch_size=args.batch_size,
                 num_workers=args.num_workers,
                 batch_report=args.batch_report,
+                grid_size=args.grid_size,
+                high_freq_cutoff=args.high_freq_cutoff,
+                save_visuals=args.save_visuals,
                 output_dir=Path(args.output_dir),
                 report_name=args.report_name,
             )
 
         report_path = run_evaluate(eval_cfg, skip_clean=args.skip_clean)
         print(f"评估完成，报告已保存至: {report_path}")
+        return
+
+    if args.command == "defend":
+        from psorad.defense.runner import run_defense
+
+        if args.config is not None:
+            from psorad.config import load_defense_config
+
+            cfg = load_defense_config(args.config)
+        else:
+            from psorad.config import DefenseConfig
+
+            cfg = DefenseConfig(
+                backbone=args.backbone,
+                checkpoint=args.checkpoint,
+                batch_report=args.batch_report,
+                window=args.window,
+                threshold=args.threshold,
+                dilation=args.dilation,
+                low_freq_cutoff=args.low_freq_cutoff,
+                low_freq=args.low_freq,
+                output_dir=Path(args.output_dir),
+                report_name=args.report_name,
+            )
+
+        report_path = run_defense(cfg)
+        print(f"防御完成，报告已保存至: {report_path}")
         return
 
 
