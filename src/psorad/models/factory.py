@@ -1,13 +1,13 @@
 from __future__ import annotations
 
-from typing import Callable, Dict, Optional
+from collections.abc import Callable
+
 from torch import nn
 
-from psorad.models.classifier import build_resnet50_classifier, SiglipClassifier
 from psorad.config import ModelConfig
+from psorad.models.classifier import SiglipClassifier, build_resnet50_classifier
 
-
-Registry = Dict[str, Callable[[ModelConfig, int], nn.Module]]
+Registry = dict[str, Callable[[ModelConfig, int], nn.Module]]
 _REGISTRY: Registry = {}
 
 

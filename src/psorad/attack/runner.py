@@ -13,7 +13,6 @@ from torch import nn
 
 from psorad.attack.losses import UnTargeted
 from psorad.attack.samoo_core.attack import Attack, AttackParams
-from psorad.models.classifier import build_resnet50_classifier
 from psorad.utils.image import center_crop_resize
 
 
@@ -408,8 +407,8 @@ def _load_checkpoint(backbone: str, checkpoint_path: str, device: torch.device) 
             break
 
     # Build model using factory and then load checkpoint weights
-    from psorad.models.factory import build_model
     from psorad.config import ModelConfig
+    from psorad.models.factory import build_model
 
     model_cfg = ModelConfig(backbone=backbone, pretrained_path=None, freeze_backbone=False, num_classes=num_classes)
     model = build_model(model_cfg, num_classes=num_classes)
