@@ -6,13 +6,16 @@ from pathlib import Path
 from typing import Any
 
 
-def build_eval_report(clean: dict[str, Any] | None, robust: dict[str, Any], meta: dict[str, Any]) -> dict[str, Any]:
-    """合并 clean 与 robust 指标为统一评估报告。"""
-    return {
+def build_eval_report(clean: dict[str, Any] | None, robust: dict[str, Any], meta: dict[str, Any], *, vulnerability: dict[str, Any] | None = None) -> dict[str, Any]:
+    """合并 clean、robust 与 vulnerability 指标为统一评估报告。"""
+    report: dict[str, Any] = {
         "meta": {"created_at": datetime.now().isoformat(timespec="seconds"), **meta},
         "clean": clean if clean is not None else {"available": False, "reason": "clean_eval_skipped"},
         "robust": robust,
     }
+    if vulnerability is not None:
+        report["vulnerability"] = vulnerability
+    return report
 
 
 def _fmt(value: Any) -> str:
@@ -59,6 +62,47 @@ def _render_markdown(report: dict[str, Any]) -> str:
             block = stats.get(name, {})
             lines.append(f"- {name}: mean={_fmt(block.get('mean'))}, median={_fmt(block.get('median'))}, p90={_fmt(block.get('p90'))}")
     lines.append("")
+
+    vuln = report.get("vulnerability", {})
+    if vuln.get("available"):
+        lines.append("## 脆弱性分析")
+        bs = vuln.get("by_success", {})
+        for outcome in ("success", "failure"):
+            group = bs.get(outcome)
+            if group is not None:
+                lines.append(f"### {'攻击成功' if outcome == 'success' else '攻击失败'}组")
+                lines.append(f"- 样本数: {group.get('count')}")
+                lines.append(f"- prob_true_before: mean={_fmt(group.get('prob_true_before_mean'))}, median={_fmt(group.get('prob_true_before_median'))}")
+                lines.append(f"- queries: mean={_fmt(group.get('queries_mean'))}, median={_fmt(group.get('queries_median'))}")
+                lines.append(f"- linf: mean={_fmt(group.get('linf_mean'))}, median={_fmt(group.get('linf_median'))}")
+                lines.append(f"- modified_pixels: mean={_fmt(group.get('modified_pixels_mean'))}, median={_fmt(group.get('modified_pixels_median'))}")
+                if outcome == "success":
+                    lines.append(f"- confidence_drop: mean={_fmt(group.get('confidence_drop_mean'))}")
+
+        cc = vuln.get("confidence_correlation", [])
+        if cc:
+            lines.append("### 置信度与 ASR 相关性")
+            lines.append("| 置信度区间 | 样本数 | ASR |")
+            lines.append("|-----------|--------|-----|")
+            for entry in cc:
+                lines.append(f"| {entry['bucket']} | {entry['count']} | {_fmt(entry['asr'])} |")
+
+        freq = vuln.get("frequency", {})
+        if freq:
+            lines.append("### 频域分析")
+            lines.append(f"- 高频能量占比: mean={_fmt(freq.get('high_freq_ratio_mean'))}, median={_fmt(freq.get('high_freq_ratio_median'))}")
+            lines.append(f"- 成功组平均高频占比: {_fmt(freq.get('success_high_freq_mean'))}")
+            lines.append(f"- 失败组平均高频占比: {_fmt(freq.get('failure_high_freq_mean'))}")
+
+        spat = vuln.get("spatial", {})
+        if spat:
+            lines.append("### 空间脆弱性")
+            lines.append(f"- 最脆弱区域(网格): {spat.get('most_vulnerable_region')}")
+            lines.append(f"- 中心能量占比: {_fmt(spat.get('center_energy_ratio'))}")
+            lines.append(f"- 边缘能量占比: {_fmt(spat.get('edge_energy_ratio'))}")
+            if spat.get("heatmap_path"):
+                lines.append(f"- 热图: {spat['heatmap_path']}")
+        lines.append("")
     return "\n".join(lines)
 
 
