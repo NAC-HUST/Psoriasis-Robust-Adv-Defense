@@ -407,15 +407,12 @@ def _load_checkpoint(backbone: str, checkpoint_path: str, device: torch.device) 
             num_classes = state_dict[key].shape[0]
             break
 
-    if backbone == "resnet50":
-        model = build_resnet50_classifier(num_classes=num_classes)
-    elif backbone == "siglip":
-        from psorad.models.classifier import SiglipClassifier
+    # Build model using factory and then load checkpoint weights
+    from psorad.models.factory import build_model
+    from psorad.config import ModelConfig
 
-        model = SiglipClassifier(pretrained_dir_or_id="model/pretrained_model/siglip", num_classes=num_classes, freeze_backbone=False)
-    else:
-        raise ValueError("backbone 仅支持 resnet50 或 siglip")
-
+    model_cfg = ModelConfig(backbone=backbone, pretrained_path=None, freeze_backbone=False, num_classes=num_classes)
+    model = build_model(model_cfg, num_classes=num_classes)
     model.load_state_dict(ckpt["state_dict"], strict=False)
     model.to(device)
     model.eval()

@@ -10,7 +10,9 @@ from torch.optim import AdamW
 from tqdm import tqdm
 
 from psorad.data.dataset import build_loaders, split_manifest
-from psorad.models.classifier import build_resnet50_classifier
+from psorad.data.dataset import build_split_loaders
+from psorad.models.factory import build_model
+from psorad.config import ModelConfig
 from psorad.utils.seed import set_seed
 
 
@@ -101,18 +103,16 @@ def train_classifier(config: TrainConfig) -> Path:
         seed=config.seed,
     )
 
+    # Build model via factory to support multiple backbones
     if config.backbone == "resnet50":
-        model = build_resnet50_classifier(config.pretrained_resnet_path, num_classes=config.num_classes)
+        pretrained = config.pretrained_resnet_path
     elif config.backbone == "siglip":
-        from psorad.models.classifier import SiglipClassifier
-
-        model = SiglipClassifier(
-            pretrained_dir_or_id=config.pretrained_siglip_dir,
-            num_classes=config.num_classes,
-            freeze_backbone=config.freeze_siglip_backbone,
-        )
+        pretrained = config.pretrained_siglip_dir
     else:
-        raise ValueError("backbone 仅支持 resnet50 或 siglip")
+        pretrained = None
+
+    model_cfg = ModelConfig(backbone=config.backbone, pretrained_path=pretrained, freeze_backbone=config.freeze_siglip_backbone, num_classes=config.num_classes)
+    model = build_model(model_cfg, num_classes=config.num_classes)
 
     model = model.to(device)
     criterion = nn.CrossEntropyLoss()
@@ -156,6 +156,88 @@ def train_classifier(config: TrainConfig) -> Path:
                     "state_dict": model.state_dict(),
                     "val_acc": val_acc,
                     "image_size": config.image_size,
+                },
+                checkpoint_path,
+            )
+
+        print(f"epoch={epoch} val_loss={val_loss:.4f} val_acc={val_acc:.4f}")
+
+    return checkpoint_path
+
+
+def train_experiment(exp_cfg: "ExperimentConfig") -> Path:
+    """Run training using an ExperimentConfig loaded from TOML (split_data style).
+
+    This function keeps the same high-level behavior as train_classifier but reads data
+    from split_data and uses the model config from the experiment.
+    """
+    set_seed(exp_cfg.train.seed)
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+    # determine num_classes
+    if exp_cfg.model.num_classes is not None:
+        num_classes = int(exp_cfg.model.num_classes)
+    elif exp_cfg.dataset.class_names:
+        num_classes = len(exp_cfg.dataset.class_names)
+    else:
+        # try to read metadata.json
+        meta = exp_cfg.dataset.dataset_dir / "metadata.json"
+        if meta.exists():
+            import json
+
+            with meta.open("r", encoding="utf-8") as fh:
+                m = json.load(fh)
+            num_classes = int(m.get("global_stats", {}).get("num_classes", 2))
+        else:
+            num_classes = 2
+
+    # build loaders from split_data
+    loaders = build_split_loaders(exp_cfg.dataset, batch_size=exp_cfg.train.batch_size, num_workers=exp_cfg.train.num_workers)
+    train_loader = loaders.get("train")
+    val_loader = loaders.get("val")
+    if train_loader is None or val_loader is None:
+        raise RuntimeError("train或val loader 未能构建，请检查 split_data 与配置")
+
+    # build model
+    model = build_model(exp_cfg.model, num_classes=num_classes)
+    model = model.to(device)
+
+    criterion = nn.CrossEntropyLoss()
+    optimizer = AdamW([p for p in model.parameters() if p.requires_grad], lr=exp_cfg.train.learning_rate)
+
+    save_dir = Path(exp_cfg.train.output_dir) / exp_cfg.model.backbone
+    save_dir.mkdir(parents=True, exist_ok=True)
+    checkpoint_path = save_dir / Path(exp_cfg.train.model_name)
+
+    best_val_acc = -1.0
+    for epoch in range(1, exp_cfg.train.epochs + 1):
+        model.train()
+        progress = tqdm(train_loader, desc=f"[{exp_cfg.model.backbone}] epoch {epoch}/{exp_cfg.train.epochs}", leave=False)
+
+        for images, labels in progress:
+            images = images.to(device)
+            labels = labels.to(device)
+            logits = model(images)
+            loss = criterion(logits, labels)
+
+            optimizer.zero_grad(set_to_none=True)
+            loss.backward()
+            optimizer.step()
+
+            progress.set_postfix(loss=f"{loss.item():.4f}")
+
+        val_loss, val_acc = _evaluate(model, val_loader, criterion, device)
+        if val_acc > best_val_acc:
+            best_val_acc = val_acc
+            torch.save(
+                {
+                    "backbone": exp_cfg.model.backbone,
+                    "state_dict": model.state_dict(),
+                    "val_acc": val_acc,
+                    "image_size": exp_cfg.dataset.image_size,
+                    "normalization": exp_cfg.dataset.normalize,
+                    "label_columns": list(exp_cfg.dataset.label_columns),
+                    "class_names": list(exp_cfg.dataset.class_names),
                 },
                 checkpoint_path,
             )

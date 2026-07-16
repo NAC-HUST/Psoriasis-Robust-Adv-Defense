@@ -28,6 +28,7 @@ def build_parser() -> argparse.ArgumentParser:
     train_parser.add_argument("--dataset-root", default="dataset")
     train_parser.add_argument("--datadir", default="psoriasis_normal")
     train_parser.add_argument("--manifest-csv", default=None)
+    train_parser.add_argument("--experiment-config", default=None, help="可选：实验配置 TOML 路径（优先于 manifest/dataset-root 等参数）")
     train_parser.add_argument("--epochs", type=int, default=3)
     train_parser.add_argument("--batch-size", type=int, default=16)
     train_parser.add_argument("--learning-rate", type=float, default=1e-4)
@@ -87,7 +88,7 @@ def main() -> None:
         return
 
     if args.command == "download-models":
-        from psorad.models.download import download_all_models
+        from psorad.utils.download import download_all_models
 
         resnet_path, siglip_path = download_all_models()
         print(f"resnet50已下载到: {resnet_path}")
@@ -95,7 +96,16 @@ def main() -> None:
         return
 
     if args.command == "train":
-        from psorad.trainers.train import TrainConfig, train_classifier
+        if args.experiment_config is not None:
+            from psorad.config import load_experiment_config
+            from psorad.models.train import train_experiment
+
+            exp = load_experiment_config(args.experiment_config)
+            checkpoint_path = train_experiment(exp)
+            print(f"训练完成，最佳模型保存至: {checkpoint_path}")
+            return
+
+        from psorad.models.train import TrainConfig, train_classifier
 
         manifest_csv = _resolve_manifest_csv(args.manifest_csv, datadir=args.datadir, dataset_root=args.dataset_root)
         config = TrainConfig(

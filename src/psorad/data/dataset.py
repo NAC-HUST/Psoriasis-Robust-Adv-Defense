@@ -1,13 +1,17 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Sequence
 
+import numpy as np
 import pandas as pd
 import torch
 from PIL import Image
 from torch import Tensor
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
+
+from psorad.config import DatasetConfig
 
 
 class SkinDataset(Dataset[tuple[Tensor, Tensor]]):
@@ -43,6 +47,80 @@ class SkinDataset(Dataset[tuple[Tensor, Tensor]]):
         return image_tensor, label
 
 
+class SplitDataDataset(Dataset[tuple[Tensor, Tensor]]):
+    def __init__(
+        self,
+        label_csv: str | Path,
+        *,
+        image_column: str = "image_path",
+        label_columns: Sequence[str] | None = None,
+        label_mode: str = "single_label",
+        transform: transforms.Compose,
+    ) -> None:
+        self.label_csv = Path(label_csv)
+        self.dataset_root = self.label_csv.parent.parent
+        self.manifest = pd.read_csv(self.label_csv)
+        self.image_column = image_column
+        self.label_columns = tuple(label_columns or ())
+        self.label_mode = label_mode
+        self.transform = transform
+
+        if self.image_column not in self.manifest.columns:
+            raise ValueError(f"label CSV 必须包含 {self.image_column} 列")
+
+        if self.label_columns:
+            missing = [column for column in self.label_columns if column not in self.manifest.columns]
+            if missing:
+                raise ValueError(f"label CSV 缺少标签列: {missing}")
+        elif "class_idx" not in self.manifest.columns:
+            inferred_columns = [column for column in self.manifest.columns if column.startswith("label_")]
+            if not inferred_columns:
+                raise ValueError("label CSV 需要 class_idx 或 label_* 列")
+            self.label_columns = tuple(inferred_columns)
+
+    def __len__(self) -> int:
+        return len(self.manifest)
+
+    def _resolve_image_path(self, value: str) -> Path:
+        image_path = Path(value)
+        if image_path.is_absolute():
+            return image_path
+        return self.dataset_root / image_path
+
+    def _encode_label(self, row: pd.Series) -> Tensor:
+        if "class_idx" in self.manifest.columns and not self.label_columns:
+            return torch.tensor(int(row["class_idx"]), dtype=torch.int64)
+
+        values = np.asarray([float(row[column]) for column in self.label_columns], dtype=np.float32)
+        if self.label_mode == "multi_label":
+            return torch.tensor(values, dtype=torch.float32)
+
+        if values.size == 1:
+            return torch.tensor(int(values.item()), dtype=torch.int64)
+        return torch.tensor(int(values.argmax()), dtype=torch.int64)
+
+    def __getitem__(self, index: int) -> tuple[Tensor, Tensor]:
+        row = self.manifest.iloc[index]
+        image_path = self._resolve_image_path(str(row[self.image_column]))
+        if not image_path.exists():
+            raise FileNotFoundError(f"图像不存在: {image_path}")
+
+        with Image.open(image_path) as img:
+            image = img.convert("RGB")
+        image_tensor = self.transform(image)
+        label = self._encode_label(row)
+        return image_tensor, label
+
+
+def _resolve_normalize(normalize: str) -> transforms.Normalize:
+    normalize_key = normalize.strip().lower()
+    if normalize_key == "siglip":
+        return transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
+    if normalize_key in {"imagenet", "resnet", "resnet50"}:
+        return transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    raise ValueError(f"不支持的 normalize 策略: {normalize}")
+
+
 def build_transforms(image_size: int, for_siglip: bool, train: bool) -> transforms.Compose:
     normalize = transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]) if for_siglip else transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     augments: list[object] = [
@@ -53,6 +131,48 @@ def build_transforms(image_size: int, for_siglip: bool, train: bool) -> transfor
         augments.append(transforms.RandomHorizontalFlip(p=0.5))
     augments.extend([transforms.ToTensor(), normalize])
     return transforms.Compose(augments)
+
+
+def build_split_transforms(image_size: int, normalize: str, train: bool) -> transforms.Compose:
+    augments: list[object] = [
+        transforms.Resize(image_size, interpolation=transforms.InterpolationMode.BILINEAR),
+        transforms.CenterCrop(image_size),
+    ]
+    if train:
+        augments.append(transforms.RandomHorizontalFlip(p=0.5))
+    augments.extend([transforms.ToTensor(), _resolve_normalize(normalize)])
+    return transforms.Compose(augments)
+
+
+def build_split_loaders(
+    config: DatasetConfig,
+    batch_size: int,
+    num_workers: int,
+    splits: Sequence[str] | None = None,
+) -> dict[str, DataLoader[tuple[Tensor, Tensor]]]:
+    requested_splits = tuple(splits or config.splits)
+    loaders: dict[str, DataLoader[tuple[Tensor, Tensor]]] = {}
+
+    for split in requested_splits:
+        if split == "test" and not config.has_test_split:
+            continue
+
+        label_csv = config.label_file(split)
+        if not label_csv.exists():
+            if split == "test" and not config.has_test_split:
+                continue
+            raise FileNotFoundError(f"未找到 split={split} 的标签文件: {label_csv}")
+
+        dataset = SplitDataDataset(
+            label_csv,
+            image_column=config.image_column,
+            label_columns=config.label_columns or None,
+            label_mode=config.label_mode,
+            transform=build_split_transforms(config.image_size, config.normalize, train=split == "train"),
+        )
+        loaders[split] = DataLoader(dataset, batch_size=batch_size, shuffle=split == "train", num_workers=num_workers, pin_memory=True)
+
+    return loaders
 
 
 def build_loaders(
