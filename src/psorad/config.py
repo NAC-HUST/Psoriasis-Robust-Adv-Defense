@@ -180,6 +180,11 @@ def _build_dataset_config(section: dict[str, Any], *, base_dir: Path, fallback_n
     split_data_root = _to_path(section.get("split_data_root", "dataset/split_data"), base_dir=base_dir)
     assert split_data_root is not None
 
+    # 路径重复修复：若 split_data_root 最末段已等于 dataset_name，
+    # 取父目录避免 dataset_dir = split_data_root / name 时翻倍
+    if split_data_root.name == dataset_name:
+        split_data_root = split_data_root.parent
+
     label_mode = str(section.get("label_mode", "single_label"))
     if label_mode not in {"single_label", "multi_label"}:
         raise ValueError("label_mode 仅支持 single_label 或 multi_label")
@@ -365,6 +370,9 @@ def load_experiment_from_configs(
     dataset = load_dataset_config(dataset_path, name=dataset_name)
     model = load_model_config(model_path)
     train = load_train_settings(model_path)
+    # 优先从 class_names 推断 num_classes，覆盖 model config 的固定默认值
+    if dataset.class_names and model.num_classes != len(dataset.class_names):
+        model.num_classes = len(dataset.class_names)
     return ExperimentConfig(dataset=dataset, model=model, train=train, source_path=Path(model_path))
 
 
