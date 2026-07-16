@@ -115,6 +115,24 @@ class ExperimentConfig:
     source_path: Path | None = None
 
 
+@dataclass(slots=True)
+class EvalConfig:
+    backbone: str
+    checkpoint: str
+    manifest_csv: str
+    split: str = "val"
+    val_ratio: float = 0.2
+    split_seed: int = 42
+    image_size: int = 224
+    batch_size: int = 32
+    num_workers: int = 2
+    metrics: tuple[str, ...] = ("acc", "f1", "auc", "asr")
+    batch_report: str | None = None
+    output_dir: Path = Path("output/eval")
+    report_name: str = "eval_report.json"
+    extra: dict[str, Any] = field(default_factory=dict)
+
+
 # 被 loader 直接消费的字段；其余字段统一挂到 extra 保留。
 _DATASET_KNOWN_KEYS = {
     "dataset_name",
@@ -348,3 +366,75 @@ def load_experiment_from_configs(
     model = load_model_config(model_path)
     train = load_train_settings(model_path)
     return ExperimentConfig(dataset=dataset, model=model, train=train, source_path=Path(model_path))
+
+
+_EVAL_KNOWN_KEYS = {
+    "backbone",
+    "checkpoint",
+    "manifest_csv",
+    "datadir",
+    "dataset_root",
+    "split",
+    "val_ratio",
+    "split_seed",
+    "image_size",
+    "batch_size",
+    "num_workers",
+    "metrics",
+}
+
+
+def load_eval_config(path: str | Path) -> EvalConfig:
+    """加载评估配置（configs/eval_config/*.toml）。
+
+    读取 [Eval]（模型/数据/指标）、[Eval.robust]（batch_report 入口）、[Output]（报告输出）。
+    未消费的键保留在 extra，沿用配置驱动的宽容策略。
+    """
+    config_path = Path(path)
+    data = tomllib.loads(config_path.read_text(encoding="utf-8"))
+
+    section = data.get("Eval", data.get("eval"))
+    if not isinstance(section, dict):
+        raise ValueError("eval config 缺少 [Eval] 表")
+
+    backbone = str(section.get("backbone", "")).strip()
+    if not backbone:
+        raise ValueError("[Eval] 缺少 backbone")
+    checkpoint = str(section.get("checkpoint", "")).strip()
+    if not checkpoint:
+        raise ValueError("[Eval] 缺少 checkpoint")
+    manifest_csv = str(section.get("manifest_csv", "")).strip()
+    if not manifest_csv:
+        raise ValueError("[Eval] 缺少 manifest_csv")
+
+    robust_section = section.get("robust", {})
+    if not isinstance(robust_section, dict):
+        robust_section = {}
+    batch_report = robust_section.get("batch_report")
+
+    output_section = data.get("Output", data.get("output", {}))
+    if not isinstance(output_section, dict):
+        output_section = {}
+
+    extra: dict[str, Any] = {key: value for key, value in section.items() if key not in _EVAL_KNOWN_KEYS and key != "robust"}
+    if robust_section:
+        extra["robust"] = robust_section
+    if output_section:
+        extra["output"] = output_section
+
+    return EvalConfig(
+        backbone=backbone,
+        checkpoint=checkpoint,
+        manifest_csv=manifest_csv,
+        split=str(section.get("split", "val")),
+        val_ratio=float(section.get("val_ratio", 0.2)),
+        split_seed=int(section.get("split_seed", 42)),
+        image_size=_coerce_image_size(section.get("image_size", 224)),
+        batch_size=int(section.get("batch_size", 32)),
+        num_workers=int(section.get("num_workers", 2)),
+        metrics=tuple(str(item) for item in _as_tuple(section.get("metrics", ("acc", "f1", "auc", "asr")))),
+        batch_report=str(batch_report) if batch_report is not None else None,
+        output_dir=_to_path(output_section.get("output_dir", "output/eval"), base_dir=config_path.parent) or Path("output/eval"),
+        report_name=str(output_section.get("report_name", "eval_report.json")),
+        extra=extra,
+    )
