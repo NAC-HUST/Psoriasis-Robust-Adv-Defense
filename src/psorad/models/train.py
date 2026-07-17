@@ -19,7 +19,7 @@ from psorad.utils.seed import set_seed
 class TrainConfig:
     backbone: str
     num_classes: int = 2
-    manifest_csv: str = "dataset/processed_data/psoriasis_normal/class_manifest.csv"
+    manifest_csv: str = ""
     epochs: int = 3
     batch_size: int = 16
     learning_rate: float = 1e-4

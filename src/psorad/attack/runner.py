@@ -519,8 +519,8 @@ def _format_topk_probs(probs: np.ndarray, k: int = 5) -> str:
 def run_samoo_attack(
     backbone: str,
     checkpoint_path: str,
-    datadir: str = "psoriasis_normal",
-    manifest_csv: str = "dataset/processed_data/psoriasis_normal/class_manifest.csv",
+    datadir: str = "",
+    manifest_csv: str = "",
     sample_index: int = 0,
     attack_split: str = "val",
     val_ratio: float = 0.2,
