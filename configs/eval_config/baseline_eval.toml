@@ -1,0 +1,35 @@
+## Eval config catalog（攻防评估）
+
+[Eval]
+
+# 待评估模型
+backbone = "resnet50"                                   # resnet50 | siglip
+checkpoint = "model/trained_classifier/resnet50/best_classifier.pt"  # 分类器权重
+
+# 数据来源
+datadir = "psoriasis_normal"                            # processed_data 下的数据集目录名
+manifest_csv = "dataset/processed_data/psoriasis_normal/class_manifest.csv"  # 样本清单 CSV
+split = "val"                                           # all | train | val，评估所用子集
+val_ratio = 0.2                                         # manifest 无 split 列时重建 train/val
+split_seed = 42                                         # 无 split 列时的划分随机种子
+image_size = 224                                        # 输入分辨率
+
+# 评估指标
+# acc/f1/auc 属于 clean 指标；asr（攻击成功率）与 robust_acc 依赖 batch_report。
+metrics = ["acc", "f1", "auc", "asr"]                   # 需要计算的指标集合
+
+# 鲁棒性评估：批量攻击结果入口
+[Eval.robust]
+batch_report = "output/attack/resnet50/batch_report.json"  # 批量攻击聚合报告路径
+report_format = "json"                                  # json | csv，读取 batch_report 的格式
+
+# 脆弱性分析
+[Eval.vulnerability]
+grid_size = 7                                           # 空间网格划分（grid_size×grid_size）
+high_freq_cutoff = 0.25                                 # FFT 高频截止比例（相对于最大半径）
+save_visuals = false                                     # 是否保存空间热图 PNG
+
+# 输出
+[Output]
+output_dir = "output/eval/resnet50"                     # 评估报告输出目录
+report_name = "eval_report.json"                        # 评估结果文件名
