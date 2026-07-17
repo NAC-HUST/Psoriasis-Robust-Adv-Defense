@@ -65,4 +65,4 @@ def build_resnet50_classifier(pretrained_weight_path: str | None = None, num_cla
     in_features = model.fc.in_features
     model.fc = nn.Linear(in_features, num_classes)
 
-    return model
+    return cast(nn.Module, model)

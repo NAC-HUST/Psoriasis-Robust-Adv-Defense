@@ -1,0 +1,156 @@
+## Dataset catalog (split_data format)
+
+# =============================
+# psoriasis224_2c数据集的配置
+# =============================
+
+[Dataset.psoriasis224_2c]
+# --- 路径与划分 ---
+split_data_root = "dataset/split_data/psoriasis224_2c"  # 数据集根目录
+splits = ["train", "val", "test"]                      # 允许的划分
+has_test_split = true                                  # 是否包含 test
+# --- 标签定义 ---
+label_mode = "single_label"                            # single_label | multi_label
+label_columns = ["label_normal", "label_psoriasis"]    # CSV 中的列名
+class_names = ["normal", "psoriasis"]                  # 与列/索引顺序对应
+# --- 图像与归一化 ---
+image_column = "image_path"                            # CSV 中的图片路径列
+image_size = "224x224"                                 # 训练/推理目标分辨率
+channels = 3                                            # 3=RGB, 1=灰度
+
+# --- 可选：预处理 ---
+color_mode = "rgb"                                     # rgb | grayscale
+center_crop = true                                      # 是否中心裁剪
+interpolation = "bicubic"                              # nearest | bilinear | bicubic
+
+# --- 可选：语义说明 ---
+task = "classification"                                # classification | multilabel
+domain = "dermatology"                                 # 领域标签
+description = "psoriasis vs normal"                    # 简述
+
+# --- 可选：校验策略 ---
+allow_unknown_labels = false                            # 允许未知类别
+ignore_missing_files = false                            # 忽略缺失文件
+strict_schema = true                                    # 严格校验 CSV 列
+
+# =============================
+# cifar32_10c数据集的配置
+# =============================
+
+[Dataset.cifar32_10c]
+split_data_root = "dataset/split_data/cifar32_10c"
+splits = ["train", "val", "test"]
+has_test_split = true
+
+label_mode = "single_label"
+label_columns = ["label_airplane", "label_automobile", "label_bird", "label_cat", "label_deer", "label_dog", "label_frog", "label_horse", "label_ship", "label_truck"]
+class_names = ["airplane", "automobile", "bird", "cat", "deer", "dog", "frog", "horse", "ship", "truck"]
+
+image_column = "image_path"
+image_size = "32x32"
+channels = 3
+
+
+color_mode = "rgb"
+center_crop = false
+interpolation = "nearest"
+
+task = "classification"
+domain = "natural"
+license = "unknown"
+description = "CIFAR-10 (32x32)"
+
+allow_unknown_labels = false
+ignore_missing_files = false
+strict_schema = true
+
+# =============================
+# imagenette224_10c数据集的配置
+# =============================
+[Dataset.imagenette224_10c]
+split_data_root = "dataset/split_data/imagenette224_10c"
+splits = ["train", "val", "test"]
+has_test_split = true
+
+label_mode = "single_label"
+label_columns = ["label_dog", "label_fish", "label_fuelnozzle", "label_golf", "label_horn", "label_house", "label_parasail", "label_powersaw", "label_radio", "label_truck"]
+class_names = ["dog", "fish", "fuelnozzle", "golf", "horn", "house", "parasail", "powersaw", "radio", "truck"]
+
+image_column = "image_path"
+image_size = "224x224"
+channels = 3
+
+
+
+color_mode = "rgb"
+center_crop = true
+interpolation = "bicubic"
+
+task = "classification"
+domain = "natural"
+license = "unknown"
+description = "Imagenette subset"
+
+allow_unknown_labels = false
+ignore_missing_files = false
+strict_schema = false
+
+# =============================
+# dermamnist224_7c数据集的配置
+# =============================
+[Dataset.dermamnist224_7c]
+split_data_root = "dataset/split_data/dermamnist224_7c"
+splits = ["train", "val", "test"]
+has_test_split = true
+
+label_mode = "single_label"
+label_columns = ["label_AKIEC", "label_BCC", "label_BKL", "label_DF", "label_MAL_OTH", "label_NV", "label_VASC"]
+class_names = ["AKIEC", "BCC", "BKL", "DF", "MAL_OTH", "NV", "VASC"]
+
+image_column = "image_path"
+image_size = "224x224"
+channels = 3
+
+
+color_mode = "rgb"
+center_crop = true
+interpolation = "bicubic"
+
+task = "classification"
+domain = "dermatology"
+license = "unknown"
+description = "DermaMNIST 2-class"
+
+allow_unknown_labels = false
+ignore_missing_files = false
+strict_schema = false
+
+# =============================
+# milk10k_11c数据集的配置
+# =============================
+[Dataset.milk10k_11c]
+split_data_root = "dataset/split_data/milk10k_11c"
+splits = ["train", "val", "test"]
+has_test_split = true
+
+label_mode = "single_label"
+label_columns = ["label_AKIEC", "label_BCC", "label_BEN_OTH", "label_BKL", "label_DF", "label_INF", "label_MAL_OTH", "label_MEL", "label_NV", "label_SCCKA", "label_VASC"]
+class_names = ["AKIEC", "BCC", "BEN_OTH", "BKL", "DF", "INF", "MAL_OTH", "MEL", "NV", "SCCKA", "VASC"]
+
+image_column = "image_path"
+image_size = "640x400"
+channels = 3
+
+
+color_mode = "rgb"
+center_crop = true
+interpolation = "bicubic"
+
+task = "classification"
+domain = "food"
+license = "unknown"
+description = "Milk10k 11-class"
+
+allow_unknown_labels = false
+ignore_missing_files = false
+strict_schema = false

@@ -1,0 +1,36 @@
+## Attack config catalog（SAMOO 黑盒稀疏对抗攻击）
+
+[Attack]
+
+# 攻击目标模型
+backbone = "resnet50"                                   # resnet50 | siglip
+checkpoint = "model/trained_classifier/resnet50/best_classifier.pt"  # 被攻击分类器权重
+
+# 数据来源
+datadir = "psoriasis_normal"                            # processed_data 下的数据集目录名
+manifest_csv = "dataset/processed_data/psoriasis_normal/class_manifest.csv"  # 样本清单 CSV
+attack_split = "val"                                    # all | train | val，默认仅攻击验证集
+val_ratio = 0.2                                         # manifest 无 split 列时用于重建 train/val
+split_seed = 42                                         # 无 split 列时的划分随机种子
+sample_index = 0                                        # 子集内样本索引（单样本攻击）
+image_size = 224                                        # 输入分辨率（center-crop + resize）
+
+# SAMOO / NSGA-II 超参
+eps = 120                                               # 允许扰动的像素数上限
+iterations = 2500                                       # 进化迭代次数
+pc = 0.1                                                # 交叉概率
+pm = 0.4                                                # 初始变异概率
+pm_end = 0.1                                            # 末期变异概率
+pop_size = 2                                            # 种群大小
+query_budget = 5000                                     # 查询预算上限（达到即提前停止）
+zero_probability = 0.3                                  # 初始化时像素扰动为 0 的概率
+p_size = 2.0                                            # 单步扰动幅度
+tournament_size = 2                                     # 锦标赛选择规模
+include_dist = false                                    # 可行解筛选是否加入距离约束
+max_dist = 1e9                                          # 可行解最大距离阈值
+seed = 42                                               # 攻击随机种子
+
+# 结果输出
+[Output]
+export_dir = "output/attack/resnet50"                   # 文本与对比图输出目录（留空走默认命名）
+keep_raw_npy = true                                     # 是否保留原始 samoo_result.npy

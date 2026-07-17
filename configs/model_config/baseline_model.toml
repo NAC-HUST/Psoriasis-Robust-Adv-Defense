@@ -1,0 +1,115 @@
+## Model / Train config catalog
+
+[Train]
+
+# --- 必填：主干与权重 ---
+backbone = "resnet50"                                  # resnet50 | siglip | custom
+pretrained_path = "model/pretrained_model/resnet/resnet50_imagenet1k_v2.pth"  # 本地权重
+freeze_backbone = false                                 # 是否冻结 backbone
+num_classes = 2                                         # 分类数
+normalization = "imagenet"                             # imagenet | cifar10 | siglip | custom
+image_size = 224                                        # 输入分辨率
+
+# --- 必填：训练超参 ---
+epochs = 50                                              # 训练轮数
+batch_size = 32                                          # batch size
+learning_rate = 1e-4                                     # 初始学习率
+weight_decay = 1e-4                                      # 权重衰减
+seed = 42                                                # 随机种子
+num_workers = 4                                          # dataloader 线程数
+mixed_precision = true                                  # AMP
+grad_accum_steps = 1                                     # 梯度累积步数
+clip_grad_norm = 0.0                                     # >0 时启用梯度裁剪
+
+# --- 可选：学习率调度 ---
+scheduler = "cosine"                                   # cosine | step | plateau | none
+warmup_epochs = 5                                       # 预热轮数
+min_lr = 1e-6                                            # 最小 lr
+step_size = 10                                           # step 调度间隔
+gamma = 0.1                                              # step 衰减系数
+plateau_patience = 5                                    # plateau 耐心
+
+# --- 可选：损失函数 ---
+loss = "cross_entropy"                                 # cross_entropy | focal | bce
+label_smoothing = 0.0                                   # 标签平滑
+pos_weight = []                                         # BCE 正样本权重
+
+# --- 可选：评估与指标 ---
+metrics = ["acc", "f1", "auc"]                       # 评估指标
+eval_every = 1                                           # 每 N 轮评估
+save_best_metric = "acc"                               # 保存最优的指标名
+
+# --- 可选：checkpoint ---
+output_dir = "model/trained_classifier"                # 权重输出目录
+model_name = "best_classifier.pt"                      # 权重文件名
+
+
+
+[Backbone.resnet50]
+# resnet50 相关的专属参数
+pretrained_source = "torchvision"                      # torchvision | local
+weights = "IMAGENET1K_V2"                              # torchvision 权重名
+in_channels = 3                                         # 输入通道
+
+[Backbone.siglip]
+# siglip 相关的专属参数
+pretrained_source = "huggingface"                      # huggingface | local
+repo_id = "google/siglip-base-patch16-224"             # HF repo
+pooling = "mean"                                       # mean | cls
+dropout = 0.0                                            # dropout
+
+
+[Optimizer]
+# 优化器设置（与 Train 中的超参配合）
+name = "adamw"                                         # adamw | sgd
+betas = [0.9, 0.999]                                     # AdamW
+momentum = 0.9                                           # SGD
+
+
+# =============================
+# 数据增强设置
+# =============================
+[Augmentation]
+train_transforms = ["random_resized_crop", "horizontal_flip", "color_jitter"]
+val_transforms = ["resize", "center_crop"]
+random_resized_crop_scale = [0.7, 1.0]
+horizontal_flip_prob = 0.5
+color_jitter = [0.1, 0.1, 0.1, 0.0]
+
+
+
+# =============================
+# 训练结果输出配置
+# =============================
+[Output]
+output_dir = "model/trained_classifier"          # 模型权重及日志输出目录
+dir_name = "{dataset}_{backbone}"                # 输出子目录名称(可选参数<dataset>, <backbone>, <timestamp>)
+
+[Output.checkpoint]
+checkpoint_name = "model.safetensors"            # 模型文件命名(可选参数<dataset>, <backbone>, <timestamp>)
+save_every_epoch = 0                             # 每 N 轮保存一次，0 关闭
+save_top1 = true                                 # 是否保存最佳
+save_last = true                                 # 是否保存 last
+
+[Output.logging]
+log_name = "training_{timestamp}.log"            # 日志文件命名(可选参数<dataset>, <backbone>, <timestamp>)
+save_log = true                                  # 是否保存训练日志
+verbose = true                                   # 是否启用详细日志
+visualize_metrics = true                         # 是否可视化指标曲线
+
+
+
+# =============================
+# 预训练模型下载的配置
+# =============================
+[Download]
+hf_endpoint = "hf-mirror.com"                    # Hugging Face 镜像站点
+save_path = "model/pretrained_model"             # 本地保存路径
+
+[Download.resnet50]
+hf_repo_id = "microsoft/resnet-50"               # Hugging Face 仓库 ID
+dir_name = "resnet50"                            # 保存子目录名
+
+[Download.siglip2]
+hf_repo_id = "google/siglip2-base-patch16-224"   # Hugging Face 仓库 ID
+dir_name = "siglip2"                             # 保存子目录名

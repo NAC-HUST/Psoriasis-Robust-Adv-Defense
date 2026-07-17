@@ -222,11 +222,7 @@ def _build_aggregate_report(
     queries = [float(s.get("queries", -1)) for s in summaries if float(s.get("queries", -1)) >= 0]
     l2_values = [float(s.get("l2", float("nan"))) for s in summaries if not math.isnan(float(s.get("l2", float("nan"))))]
     linf_values = [float(s.get("linf", float("nan"))) for s in summaries if not math.isnan(float(s.get("linf", float("nan"))))]
-    modified_pixels = [
-        float(s.get("modified_pixel_count", float("nan")))
-        for s in summaries
-        if not math.isnan(float(s.get("modified_pixel_count", float("nan"))))
-    ]
+    modified_pixels = [float(s.get("modified_pixel_count", float("nan"))) for s in summaries if not math.isnan(float(s.get("modified_pixel_count", float("nan"))))]
     durations = [float(row.get("duration_sec", float("nan"))) for row in ok_rows if not math.isnan(float(row.get("duration_sec", float("nan"))))]
 
     class_stats: dict[str, dict[str, int | float]] = {}
@@ -394,9 +390,7 @@ def _write_report_files(report: dict[str, Any], run_root: Path) -> tuple[Path, P
     if class_stats:
         for class_key in sorted(class_stats.keys(), key=lambda x: int(x) if str(x).isdigit() else str(x)):
             row = class_stats[class_key]
-            md_lines.append(
-                f"- class_{class_key}: count={row.get('count')}, success={row.get('success')}, success_rate={float(row.get('success_rate', 0.0)):.4f}"
-            )
+            md_lines.append(f"- class_{class_key}: count={row.get('count')}, success={row.get('success')}, success_rate={float(row.get('success_rate', 0.0)):.4f}")
     else:
         md_lines.append("- 无可用样本")
 
