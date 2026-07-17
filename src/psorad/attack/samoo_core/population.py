@@ -18,4 +18,8 @@ class Population:
             candidate.evaluate(self.loss_function, self.include_dist)
 
     def find_adv_solns(self, max_dist: float) -> list[Solution]:
-        return [candidate for candidate in self.population if bool(candidate.is_adversarial) and float(candidate.fitnesses[1]) <= max_dist]
+        return [
+            candidate
+            for candidate in self.population
+            if bool(candidate.is_adversarial) and float(candidate.fitnesses[1]) <= max_dist
+        ]
