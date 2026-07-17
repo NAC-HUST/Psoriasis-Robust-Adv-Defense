@@ -209,9 +209,12 @@ __marimo__/
 # Other
 .copilot/
 tmp/
+tmp.tar.gz
+.qoder/settings.local.json
 reb/
 dataset/processed_data/
 dataset/raw_data/
+dataset/split_data/
 model/pretrained_model/resnet/
 model/pretrained_model/siglip/
 model/trained_classifier/resnet/

@@ -1,8 +1,6 @@
-from psorad.models.download import download_all_models, download_resnet50, download_siglip
+from psorad.models.factory import available_backbones, build_model
 
 __all__ = [
-    "download_all_models",
-    "download_resnet50",
-    "download_siglip",
+    "build_model",
+    "available_backbones",
 ]
-
