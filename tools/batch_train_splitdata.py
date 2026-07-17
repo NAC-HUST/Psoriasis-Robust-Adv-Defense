@@ -1,12 +1,5 @@
 #!/usr/bin/env python3
-"""Batch train ResNet50 on all 5 split_data datasets with uniform params.
-
-Usage:
-    .venv/bin/python tools/batch_train_splitdata.py
-
-Uniform training params (user-approved):
-    epochs=5, batch_size=32, lr=1e-4, seed=42, image_size=224.
-"""
+# 对 5 个数据集批量训练 ResNet50
 
 from __future__ import annotations
 

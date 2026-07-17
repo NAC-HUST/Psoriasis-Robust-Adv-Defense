@@ -192,9 +192,9 @@ class BinaryModelAdapter:
         logits = self.model(x)
         if not isinstance(logits, torch.Tensor):
             raise TypeError("model forward 必须返回 torch.Tensor")
-        # 现在模型直接输出 (batch, num_classes)
+        # 多分类输出
         if logits.ndim == 1:
-            # 如果还是旧的二分类输出 (batch,)，则转换为 (batch, 2)
+            # 旧二分类转多分类
             logits_binary = logits.reshape(-1)
             logits = torch.stack([-logits_binary, logits_binary], dim=1)
         return logits
@@ -211,12 +211,12 @@ class BinaryModelAdapter:
         logits = self.model(tensor)
         if not isinstance(logits, torch.Tensor):
             raise TypeError("model forward 必须返回 torch.Tensor")
-        # 返回正类（class 1）的 logit
+        # 返回正类 logit
         if logits.ndim == 1:
-            # 旧的二分类模式
+            # 旧二分类
             logit = logits.reshape(-1)[0]
         else:
-            # 新的多分类模式，取 class 1 的 logit
+            # 多分类取 class 1 logit
             logit = logits[0, 1]
         return float(logit.item())
 
@@ -397,16 +397,16 @@ def _export_attack_artifacts(
 def _load_checkpoint(backbone: str, checkpoint_path: str, device: torch.device) -> nn.Module:
     ckpt = torch.load(checkpoint_path, map_location=device)
 
-    # 从权重推断 num_classes
+    # 从权重推断类别数
     state_dict = ckpt["state_dict"]
-    # 找最后一层的权重，推断输出维度
+    # 从末层权重推断维度
     num_classes = 2  # 默认二分类
     for key in state_dict:
         if "fc.weight" in key or "classifier.weight" in key:
             num_classes = state_dict[key].shape[0]
             break
 
-    # Build model using factory and then load checkpoint weights
+    # 工厂构建模型并加载权重
     from psorad.config import ModelConfig
     from psorad.models.factory import build_model
 

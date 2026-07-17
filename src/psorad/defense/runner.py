@@ -30,7 +30,7 @@ def _model_forward(
     *,
     backbone: str = "resnet50",
 ) -> tuple[int, float]:
-    """Run numpy image through model, return (pred_label, max_prob)."""
+    # 模型前向，返回 (pred_label, max_prob)
     import torchvision.transforms as transforms  # fmt: skip
 
     if backbone in {"resnet50", "resnet"}:
@@ -38,7 +38,7 @@ def _model_forward(
     else:
         normalize = transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5])
 
-    # HWC -> CHW, normalize
+    # HWC 转 CHW 并归一化
     tensor = torch.from_numpy(img.transpose(2, 0, 1)).float().to(device)
     tensor = normalize(tensor).unsqueeze(0)
 
@@ -51,11 +51,7 @@ def _model_forward(
 
 
 def run_defense(cfg: DefenseConfig) -> Path:
-    """Run region-aware purification defense evaluation.
-
-    Reads batch_report.json, loads before/after images,
-    applies purify(), and measures recovery / clean impact.
-    """
+    # 区域感知净化防御评估
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model, num_classes = load_classifier(cfg.backbone, cfg.checkpoint, device)
 
@@ -65,7 +61,7 @@ def run_defense(cfg: DefenseConfig) -> Path:
 
     data = json.loads(report_path.read_text(encoding="utf-8"))
     results = data.get("results", [])
-    dataset_name = report_path.parent.name  # e.g. psoriasis224_2c
+    dataset_name = report_path.parent.name  # 如 psoriasis224_2c
 
     ok_results = [row for row in results if row.get("status") == "ok"]
     if not ok_results:
@@ -73,7 +69,7 @@ def run_defense(cfg: DefenseConfig) -> Path:
 
     artifact_root = report_path.parent
 
-    # Metrics accumulators
+    # 指标累积
     clean_correct = 0
     clean_purified_correct = 0
     recovered = 0
@@ -81,7 +77,7 @@ def run_defense(cfg: DefenseConfig) -> Path:
     robust_after_correct = 0
     total = 0
 
-    # Per-class recovery
+    # 各类恢复率
     class_recovery: dict[str, dict[str, int]] = {}
 
     for row in ok_results:
@@ -100,12 +96,12 @@ def run_defense(cfg: DefenseConfig) -> Path:
         if before is None or after is None:
             continue
 
-        # Clean accuracy
+        # 干净精度
         pred_b, _ = _model_forward(model, before, device, backbone=cfg.backbone)
         if pred_b == true_label:
             clean_correct += 1
 
-        # Purified clean accuracy
+        # 净化后干净精度
         purified_before = purify(
             before,
             window=cfg.window,
@@ -118,7 +114,7 @@ def run_defense(cfg: DefenseConfig) -> Path:
         if pred_pb == true_label:
             clean_purified_correct += 1
 
-        # Robust accuracy after defense
+        # 防御后鲁棒精度
         purified_after = purify(
             after,
             window=cfg.window,
@@ -131,7 +127,7 @@ def run_defense(cfg: DefenseConfig) -> Path:
         if pred_pa == true_label:
             robust_after_correct += 1
 
-        # Recovery: only for successfully attacked samples
+        # 恢复：仅对攻击成功的样本
         if success:
             attack_success_total += 1
             if pred_pa == true_label:
@@ -142,21 +138,21 @@ def run_defense(cfg: DefenseConfig) -> Path:
                 class_recovery[cls_key]["attacked"] += 1
                 class_recovery[cls_key]["recovered"] += 1
         elif success is False:
-            # Track attacked-but-not-recovered for class stats
+            # 各类统计
             cls_key = class_name
             if cls_key not in class_recovery:
                 class_recovery[cls_key] = {"attacked": 0, "recovered": 0}
             if success:
                 class_recovery[cls_key]["attacked"] += 1
 
-    # Compute metrics
+    # 计算指标
     clean_acc = clean_correct / total if total > 0 else float("nan")
     clean_acc_purified = clean_purified_correct / total if total > 0 else float("nan")
     clean_acc_drop = clean_acc - clean_acc_purified
     robust_acc_after = robust_after_correct / total if total > 0 else float("nan")
     recovery_rate = recovered / attack_success_total if attack_success_total > 0 else float("nan")
 
-    # Per-class recovery rates
+    # 各类恢复率
     per_class_recovery: dict[str, dict[str, Any]] = {}
     for cls_name, cr in class_recovery.items():
         attacked = cr["attacked"]
@@ -205,7 +201,7 @@ def run_defense(cfg: DefenseConfig) -> Path:
 
     json_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    # Markdown report (Chinese)
+    # Markdown 报告
     md_lines = [
         "# 净化防御报告",
         "",

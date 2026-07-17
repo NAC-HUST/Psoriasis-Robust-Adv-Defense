@@ -16,10 +16,7 @@ from psorad.models.factory import build_model
 
 
 def load_classifier(backbone: str, checkpoint_path: str, device: torch.device) -> tuple[nn.Module, int]:
-    """加载分类器 checkpoint，并从最后一层权重推断 num_classes。
-
-    与 attack/runner 的加载逻辑保持一致，但独立实现以解耦评估与攻击模块。
-    """
+    # 加载分类器
     ckpt = torch.load(checkpoint_path, map_location=device)
     state_dict = ckpt["state_dict"] if isinstance(ckpt, dict) and "state_dict" in ckpt else ckpt
 
@@ -38,7 +35,7 @@ def load_classifier(backbone: str, checkpoint_path: str, device: torch.device) -
 
 
 def _select_split_manifest(manifest_csv: str, split: str, val_ratio: float, split_seed: int) -> pd.DataFrame:
-    """按 split 取出样本子集，逻辑与 attack/train 对齐。"""
+    # 按 split 选取子集
     split_name = split.lower().strip()
     if split_name not in {"all", "train", "val"}:
         raise ValueError("split 仅支持 all/train/val")
@@ -78,7 +75,7 @@ def evaluate_clean(
     batch_size: int = 32,
     num_workers: int = 2,
 ) -> dict[str, Any]:
-    """在指定 split 上前向推理并计算干净样本指标。"""
+    # 前向推理并计算指标
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model, num_classes = load_classifier(backbone, checkpoint_path, device)
 

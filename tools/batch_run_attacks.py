@@ -1,13 +1,5 @@
 #!/usr/bin/env python3
-"""Run batch attacks on all 5 trained models and produce baseline comparison.
-
-Usage:
-    .venv/bin/python tools/batch_run_attacks.py [--max-samples 50] [--workers 2] [--dry-run]
-
-Runs batch_parallel_attack.py for each of the 5 datasets with uniform SAMOO params.
-Output: output/batch_attack/resnet50/<dataset>/batch_report.json (gitignored).
-Summary: output/eval/baseline_comparison.{json,md} (gitignored).
-"""
+# 对 5 个已训练模型批量运行攻击
 
 from __future__ import annotations
 
@@ -130,7 +122,6 @@ def run() -> None:
             comparison[ds["name"]] = {"error": result.stderr.strip()}
             continue
 
-        # Parse batch_report.json for summary
         report_dir = BASE_DIR / "output" / "batch_attack" / "resnet50" / ds["name"]
         report_path = report_dir / "batch_report.json"
         if report_path.exists():
@@ -150,7 +141,6 @@ def run() -> None:
         else:
             comparison[ds["name"]] = {"error": "batch_report.json not found"}
 
-    # Write comparison
     if not args.dry_run:
         out_dir = BASE_DIR / "output" / "eval"
         out_dir.mkdir(parents=True, exist_ok=True)
@@ -180,7 +170,6 @@ def run() -> None:
         print(f"  {json_path}")
         print(f"  {md_path}")
 
-        # Print summary table
         print(f"\n{'=' * 60}")
         print("Baseline Comparison Summary:")
         print(f"{'=' * 60}")

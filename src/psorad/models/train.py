@@ -44,7 +44,7 @@ def _resolve_model_name(model_name: str) -> str:
 
 
 def _multiclass_accuracy(logits: Tensor, targets: Tensor) -> float:
-    """多分类准确率计算"""
+    # 多分类准确率
     preds = torch.argmax(logits, dim=-1)
     targets = targets.reshape(-1)
     correct = (preds == targets).float().mean()
@@ -85,7 +85,7 @@ def train_classifier(config: TrainConfig) -> Path:
     set_seed(config.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # 自动检测 num_classes
+    # 自动检测类别数
     manifest = pd.read_csv(config.manifest_csv)
     if "class_idx" in manifest.columns:
         detected_num_classes = int(manifest["class_idx"].max()) + 1
@@ -102,7 +102,7 @@ def train_classifier(config: TrainConfig) -> Path:
         seed=config.seed,
     )
 
-    # Build model via factory to support multiple backbones
+    # 通过工厂构建模型
     if config.backbone == "resnet50":
         pretrained = config.pretrained_resnet_path
     elif config.backbone == "siglip":
@@ -165,21 +165,17 @@ def train_classifier(config: TrainConfig) -> Path:
 
 
 def train_experiment(exp_cfg: ExperimentConfig) -> Path:
-    """Run training using an ExperimentConfig loaded from TOML (split_data style).
-
-    This function keeps the same high-level behavior as train_classifier but reads data
-    from split_data and uses the model config from the experiment.
-    """
+    # 使用 ExperimentConfig 训练
     set_seed(exp_cfg.train.seed)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    # determine num_classes
+    # 确定类别数
     if exp_cfg.model.num_classes is not None:
         num_classes = int(exp_cfg.model.num_classes)
     elif exp_cfg.dataset.class_names:
         num_classes = len(exp_cfg.dataset.class_names)
     else:
-        # try to read metadata.json
+        # 读取 metadata.json
         meta = exp_cfg.dataset.dataset_dir / "metadata.json"
         if meta.exists():
             import json
@@ -190,14 +186,14 @@ def train_experiment(exp_cfg: ExperimentConfig) -> Path:
         else:
             num_classes = 2
 
-    # build loaders from split_data
+    # 从 split_data 构建加载器
     loaders = build_split_loaders(exp_cfg.dataset, batch_size=exp_cfg.train.batch_size, num_workers=exp_cfg.train.num_workers)
     train_loader = loaders.get("train")
     val_loader = loaders.get("val")
     if train_loader is None or val_loader is None:
         raise RuntimeError("train或val loader 未能构建，请检查 split_data 与配置")
 
-    # build model
+    # 构建模型
     model = build_model(exp_cfg.model, num_classes=num_classes)
     model = model.to(device)
 

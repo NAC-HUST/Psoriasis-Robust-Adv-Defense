@@ -4,7 +4,7 @@ import numpy as np
 
 
 def confusion_matrix(y_true: np.ndarray, y_pred: np.ndarray, num_classes: int) -> np.ndarray:
-    """计算混淆矩阵，行=真实类，列=预测类。"""
+    # 混淆矩阵
     matrix = np.zeros((num_classes, num_classes), dtype=np.int64)
     for true_label, pred_label in zip(y_true.astype(int), y_pred.astype(int), strict=False):
         if 0 <= true_label < num_classes and 0 <= pred_label < num_classes:
@@ -19,7 +19,7 @@ def accuracy(y_true: np.ndarray, y_pred: np.ndarray) -> float:
 
 
 def precision_recall_f1(y_true: np.ndarray, y_pred: np.ndarray, num_classes: int) -> dict[str, object]:
-    """返回 per-class 与 macro 的 precision/recall/f1。"""
+    # 精度/召回/F1
     matrix = confusion_matrix(y_true, y_pred, num_classes)
     tp = np.diag(matrix).astype(np.float64)
     pred_sum = matrix.sum(axis=0).astype(np.float64)
@@ -44,7 +44,7 @@ def precision_recall_f1(y_true: np.ndarray, y_pred: np.ndarray, num_classes: int
 
 
 def _binary_auc(y_true: np.ndarray, y_score: np.ndarray) -> float:
-    """基于 Mann-Whitney U 的二分类 AUC（对 tie 取平均秩）。"""
+    # 二分类 AUC
     positive = y_true == 1
     n_pos = int(np.sum(positive))
     n_neg = int(y_true.size - n_pos)
@@ -69,10 +69,7 @@ def _binary_auc(y_true: np.ndarray, y_score: np.ndarray) -> float:
 
 
 def roc_auc(y_true: np.ndarray, y_score: np.ndarray, num_classes: int) -> float:
-    """AUC：二分类直接算正类；多分类走 macro One-vs-Rest。
-
-    y_score 形状：(N, num_classes) 的类别概率/分数。
-    """
+    # AUC（二分类/多分类）
     y_true = y_true.astype(int)
     if y_score.ndim == 1:
         y_score = np.stack([1.0 - y_score, y_score], axis=1)
@@ -92,7 +89,7 @@ def roc_auc(y_true: np.ndarray, y_score: np.ndarray, num_classes: int) -> float:
 
 
 def clean_metrics(y_true: np.ndarray, y_score: np.ndarray, num_classes: int) -> dict[str, object]:
-    """由标签与类别分数计算干净样本指标集合。"""
+    # 干净样本指标
     y_pred = np.argmax(y_score, axis=1)
     prf1 = precision_recall_f1(y_true, y_pred, num_classes)
     return {

@@ -1,16 +1,5 @@
 #!/usr/bin/env python3
-"""Generate attack manifests from split_data label CSVs.
-
-For each dataset in baseline_dataset.toml, reads train_labels.csv and
-val_labels.csv (one-hot label_* columns) and writes a unified manifest CSV
-with columns: file_path,class_idx,class_name,split.
-
-Usage:
-    .venv/bin/python tools/generate_attack_manifest.py
-
-Output:
-    output/manifests/{dataset_name}_manifest.csv  (gitignored)
-"""
+# 从 split_data 标签 CSV 生成攻击 manifest
 
 from __future__ import annotations
 
@@ -51,21 +40,20 @@ def _build_manifest(
     if image_column not in df.columns:
         raise ValueError(f"{label_csv} 缺少 image_column='{image_column}'")
 
-    # resolve relative paths to absolute
+    # 路径转绝对
     df["file_path"] = df[image_column].apply(lambda p: str((dataset_dir / p).resolve()))
 
-    # class_idx: argmax of label_* columns matching class_names order
-    # first, map label_columns to class_names order (they should already match)
+    # 通过 argmax 确定 class_idx
     label_values = df[list(label_columns)].values.astype(np.float32)
     df["class_idx"] = np.argmax(label_values, axis=1).astype(np.int64)
 
-    # class_name
+    # 映射 class_name
     name_map = {i: name for i, name in enumerate(class_names)}
     df["class_name"] = df["class_idx"].map(name_map)
 
     df["split"] = split
 
-    # keep only needed columns
+    # 保留必要列
     result = df[["file_path", "class_idx", "class_name", "split"]].copy()
     return result
 

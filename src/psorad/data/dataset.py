@@ -25,7 +25,7 @@ class SkinDataset(Dataset[tuple[Tensor, Tensor]]):
         self.transform = transform
 
     def set_manifest(self, manifest: pd.DataFrame) -> None:
-        """支持外部设置 manifest（用于分层抽样）"""
+        # 外部设置 manifest
         if "file_path" not in manifest.columns or "class_idx" not in manifest.columns:
             raise ValueError("manifest 必须包含 file_path 和 class_idx 列")
         self.manifest = manifest

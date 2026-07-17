@@ -36,11 +36,7 @@ def _require_mapping(section: str, value: Any) -> dict[str, Any]:
 
 
 def _coerce_image_size(value: Any, *, default: int = 224) -> int:
-    """将 image_size 归一化为方形边长 int。
-
-    兼容用户 TOML 中的多种写法：int（224）、字符串（"224x224" / "640x400" / "224"）。
-    非方形时取首个维度，原始值由上层保留在 extra 中。
-    """
+    # 归一化为方形边长
     if value is None:
         return default
     if isinstance(value, bool):
@@ -151,7 +147,7 @@ class DefenseConfig:
     extra: dict[str, Any] = field(default_factory=dict)
 
 
-# 被 loader 直接消费的字段；其余字段统一挂到 extra 保留。
+# 被 loader 消费的字段
 _DATASET_KNOWN_KEYS = {
     "dataset_name",
     "name",
@@ -176,14 +172,11 @@ _MODEL_KNOWN_KEYS = {
 
 
 def _select_named_section(data: dict[str, Any], table_name: str) -> tuple[dict[str, Any], str | None]:
-    """从 [<table_name>.<name>] 嵌套结构中取出一个子表。
-
-    返回 (section, selected_name)。若不存在嵌套结构，返回 ({}, None)。
-    """
+    # 从嵌套结构中取出子表
     table = data.get(table_name)
     if not isinstance(table, dict) or not table:
         return {}, None
-    # 仅当值本身也是 table 时才视为 [<table_name>.<name>] 嵌套
+    # 仅当值为 table 才视为嵌套
     nested = {key: value for key, value in table.items() if isinstance(value, dict)}
     if not nested:
         return {}, None
@@ -198,8 +191,7 @@ def _build_dataset_config(section: dict[str, Any], *, base_dir: Path, fallback_n
     split_data_root = _to_path(section.get("split_data_root", "dataset/split_data"), base_dir=base_dir)
     assert split_data_root is not None
 
-    # 路径重复修复：若 split_data_root 最末段已等于 dataset_name，
-    # 取父目录避免 dataset_dir = split_data_root / name 时翻倍
+    # 避免路径重复
     if split_data_root.name == dataset_name:
         split_data_root = split_data_root.parent
 
@@ -225,19 +217,13 @@ def _build_dataset_config(section: dict[str, Any], *, base_dir: Path, fallback_n
 
 
 def load_dataset_config(path: str | Path, name: str | None = None) -> DatasetConfig:
-    """加载数据集配置。
-
-    同时兼容两种写法：
-    - 扁平：顶层直接写 dataset_name / split_data_root / ...
-    - 嵌套：[Dataset.<name>]（catalog 目录式，可含多个数据集）。
-      未指定 name 时取第一个。
-    """
+    # 加载数据集配置
     config_path = Path(path)
     data = tomllib.loads(config_path.read_text(encoding="utf-8"))
 
     nested, _ = _select_named_section(data, "Dataset")
     if not nested:
-        # 兼容小写 [dataset.<name>]
+        # 兼容小写
         nested, _ = _select_named_section(data, "dataset")
 
     if nested:
@@ -254,10 +240,7 @@ def load_dataset_config(path: str | Path, name: str | None = None) -> DatasetCon
 
 
 def _extract_model_section(data: dict[str, Any]) -> dict[str, Any]:
-    """从模型 TOML 中定位承载模型定义的 section。
-
-    优先使用 [Train] / [model] / [Model]；否则回退到顶层。
-    """
+    # 定位模型定义段
     for key in ("Train", "train", "Model", "model"):
         candidate = data.get(key)
         if isinstance(candidate, dict) and candidate.get("backbone"):
@@ -266,11 +249,7 @@ def _extract_model_section(data: dict[str, Any]) -> dict[str, Any]:
 
 
 def load_model_config(path: str | Path) -> ModelConfig:
-    """加载模型配置。
-
-    兼容用户 catalog 写法：模型定义位于 [Train] 表（含 backbone/pretrained_path/... 及训练超参），
-    backbone 专属项位于 [Backbone.<backbone>]。被消费的字段进入 ModelConfig，其余进入 extra。
-    """
+    # 加载模型配置
     config_path = Path(path)
     data = tomllib.loads(config_path.read_text(encoding="utf-8"))
 
@@ -290,7 +269,7 @@ def load_model_config(path: str | Path) -> ModelConfig:
         if isinstance(specific, dict):
             extra["backbone_params"] = specific
 
-    # 保留其它顶层配置块（Optimizer / Augmentation / Output / Download 等）
+    # 保留其他顶层配置块
     for block in ("Optimizer", "Augmentation", "Output", "Download"):
         if isinstance(data.get(block), dict):
             extra[block.lower()] = data[block]
@@ -307,7 +286,7 @@ def load_model_config(path: str | Path) -> ModelConfig:
 
 
 def load_train_settings(path: str | Path) -> TrainSettings:
-    """从模型 TOML 的 [Train] 表中读取训练超参数（缺省走默认值）。"""
+    # 读取训练超参数
     config_path = Path(path)
     data = tomllib.loads(config_path.read_text(encoding="utf-8"))
     section = data.get("Train", data.get("train", {}))
@@ -330,11 +309,7 @@ def load_train_settings(path: str | Path) -> TrainSettings:
 
 
 def load_experiment_config(path: str | Path) -> ExperimentConfig:
-    """加载单文件实验配置（包含 [dataset]/[model]/[train] 三个表）。
-
-    面向"一个实验一个 TOML"的写法；分离的 dataset/model 目录式配置请用
-    load_experiment_from_configs。
-    """
+    # 加载单文件实验配置
     config_path = Path(path)
     data = tomllib.loads(config_path.read_text(encoding="utf-8"))
 
@@ -384,11 +359,11 @@ def load_experiment_from_configs(
     *,
     dataset_name: str | None = None,
 ) -> ExperimentConfig:
-    """由分离的数据集 TOML + 模型 TOML 组合出实验配置（catalog 目录式）。"""
+    # 组合数据集与模型配置
     dataset = load_dataset_config(dataset_path, name=dataset_name)
     model = load_model_config(model_path)
     train = load_train_settings(model_path)
-    # 优先从 class_names 推断 num_classes，覆盖 model config 的固定默认值
+    # 从 class_names 推断 num_classes
     if dataset.class_names and model.num_classes != len(dataset.class_names):
         model.num_classes = len(dataset.class_names)
     return ExperimentConfig(dataset=dataset, model=model, train=train, source_path=Path(model_path))
@@ -414,11 +389,7 @@ _EVAL_KNOWN_KEYS = {
 
 
 def load_eval_config(path: str | Path) -> EvalConfig:
-    """加载评估配置（configs/eval_config/*.toml）。
-
-    读取 [Eval]（模型/数据/指标）、[Eval.robust]（batch_report 入口）、[Output]（报告输出）。
-    未消费的键保留在 extra，沿用配置驱动的宽容策略。
-    """
+    # 加载评估配置
     config_path = Path(path)
     data = tomllib.loads(config_path.read_text(encoding="utf-8"))
 
@@ -492,10 +463,7 @@ _DEFENSE_KNOWN_KEYS = {
 
 
 def load_defense_config(path: str | Path) -> DefenseConfig:
-    """加载防御配置（configs/defence_config/*.toml）。
-
-    读取 [Defense]（backbone/checkpoint/batch_report）、[Defense.purify]（净化超参）、[Output]。
-    """
+    # 加载防御配置
     config_path = Path(path)
     data = tomllib.loads(config_path.read_text(encoding="utf-8"))
 

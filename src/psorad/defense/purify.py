@@ -4,15 +4,7 @@ import numpy as np
 
 
 def local_median(img: np.ndarray, window: int = 3) -> np.ndarray:
-    """Per-channel sliding-window local median with reflect padding.
-
-    Args:
-        img: HxWx3 float32 array in [0, 1].
-        window: odd-sized square window.
-
-    Returns:
-        HxWx3 local median estimate.
-    """
+    # 逐通道局部中值滤波
     if window % 2 == 0:
         window += 1
     pad = window // 2
@@ -33,19 +25,9 @@ def region_aware_mask(
     threshold: float = 0.08,
     dilation: int = 1,
 ) -> np.ndarray:
-    """Binary HxW mask: pixels where any channel deviates from local median.
-
-    Args:
-        img: HxWx3 float32 in [0, 1].
-        window: local median window size.
-        threshold: deviation threshold (pixel value).
-        dilation: radius of max-filter dilation.
-
-    Returns:
-        HxW boolean array (True = suspicious pixel).
-    """
+    # 二值掩膜：偏离局部中值的像素
     median = local_median(img, window=window)
-    diff = np.max(np.abs(img - median), axis=2)  # HxW max over channels
+    diff = np.max(np.abs(img - median), axis=2)  # 通道间最大偏差
     mask: np.ndarray = diff > threshold
 
     if dilation > 0 and mask.any():
@@ -58,15 +40,7 @@ def region_aware_mask(
 
 
 def fft_lowpass(img: np.ndarray, cutoff: float = 0.25) -> np.ndarray:
-    """Per-channel FFT low-pass filter.
-
-    Args:
-        img: HxWx3 float32 in [0, 1].
-        cutoff: fraction of max radius to keep (0 = keep only DC).
-
-    Returns:
-        HxWx3 float32 in [0, 1].
-    """
+    # FFT低通滤波
     h, w = img.shape[:2]
     result = np.empty_like(img)
     cy, cx = h // 2, w // 2
@@ -96,19 +70,7 @@ def purify(
     low_freq_cutoff: float = 0.25,
     low_freq: str = "fft",
 ) -> np.ndarray:
-    """Region-aware input purification: replace suspicious pixels with low-freq estimate.
-
-    Args:
-        img: HxWx3 float32 in [0, 1].
-        window: local median window for mask.
-        threshold: pixel deviation threshold for mask.
-        dilation: region dilation radius.
-        low_freq_cutoff: FFT cutoff for low-pass reconstruction.
-        low_freq: "fft" or "median" for the replacement estimate.
-
-    Returns:
-        Purified HxWx3 float32 in [0, 1].
-    """
+    # 区域感知输入净化
     mask = region_aware_mask(img, window=window, threshold=threshold, dilation=dilation)
 
     if not mask.any():

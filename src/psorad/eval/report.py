@@ -7,7 +7,7 @@ from typing import Any
 
 
 def build_eval_report(clean: dict[str, Any] | None, robust: dict[str, Any], meta: dict[str, Any], *, vulnerability: dict[str, Any] | None = None) -> dict[str, Any]:
-    """合并 clean、robust 与 vulnerability 指标为统一评估报告。"""
+    # 合并指标为统一报告
     report: dict[str, Any] = {
         "meta": {"created_at": datetime.now().isoformat(timespec="seconds"), **meta},
         "clean": clean if clean is not None else {"available": False, "reason": "clean_eval_skipped"},
@@ -107,7 +107,7 @@ def _render_markdown(report: dict[str, Any]) -> str:
 
 
 def write_eval_report(report: dict[str, Any], output_dir: str | Path, report_name: str = "eval_report.json") -> Path:
-    """写出 json 与同名 .md 报告，返回 json 路径。"""
+    # 写入 JSON 和 Markdown 报告
     out_dir = Path(output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
 

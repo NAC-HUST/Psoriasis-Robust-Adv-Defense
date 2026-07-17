@@ -11,7 +11,7 @@ from psorad.eval.vulnerability import analyze_vulnerability, save_vulnerability_
 
 
 def run_evaluate(cfg: EvalConfig, *, skip_clean: bool = False) -> Path:
-    """执行评估：clean 指标 + robust 指标 + 脆弱性分析，写出报告。"""
+    # 执行完整评估
     clean: dict[str, Any] | None = None
     if not skip_clean:
         clean = evaluate_clean(
