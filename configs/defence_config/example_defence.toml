@@ -1,6 +1,4 @@
 ## Defence config —— 高低频 + 区域感知净化防御
-# 测试时输入净化，无需重训练。只替换可疑像素为低频重建，保留干净区域。
-#
 # 用法：python main.py defend --config configs/defence_config/example_defence.toml
 
 [Defense]

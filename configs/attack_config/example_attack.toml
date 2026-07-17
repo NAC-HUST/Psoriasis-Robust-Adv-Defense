@@ -1,17 +1,12 @@
 ## Attack config catalog（SAMOO 黑盒稀疏对抗攻击）
-# 字段命名与 psorad.attack.runner.run_samoo_attack 的实参一一对应。
-# 说明：eps / iterations / pc / pm / pm_end / pop_size / query_budget /
-#       zero_probability / p_size / tournament_size 若留空（不填该键），
-#       runner 会依据图像分辨率自动选择预设档位（小图<=64x64 与大图两套）。
-#       这里给出显式数值仅作示例，可按需删除以启用自适应预设。
 
 [Attack]
 
-# --- 必填：攻击目标模型 ---
+# 攻击目标模型
 backbone = "resnet50"                                   # resnet50 | siglip
 checkpoint = "model/trained_classifier/resnet50/best_classifier.pt"  # 被攻击分类器权重
 
-# --- 必填：数据来源（manifest 式）---
+# 数据来源
 datadir = "psoriasis_normal"                            # processed_data 下的数据集目录名
 manifest_csv = "dataset/processed_data/psoriasis_normal/class_manifest.csv"  # 样本清单 CSV
 attack_split = "val"                                    # all | train | val，默认仅攻击验证集
@@ -20,7 +15,7 @@ split_seed = 42                                         # 无 split 列时的划
 sample_index = 0                                        # 子集内样本索引（单样本攻击）
 image_size = 224                                        # 输入分辨率（center-crop + resize）
 
-# --- 可选：SAMOO / NSGA-II 超参（留空则按分辨率自适应）---
+# SAMOO / NSGA-II 超参
 eps = 120                                               # 允许扰动的像素数上限
 iterations = 2500                                       # 进化迭代次数
 pc = 0.1                                                # 交叉概率
@@ -35,7 +30,7 @@ include_dist = false                                    # 可行解筛选是否�
 max_dist = 1e9                                          # 可行解最大距离阈值
 seed = 42                                               # 攻击随机种子
 
-# --- 可选：结果输出 ---
+# 结果输出
 [Output]
 export_dir = "output/attack/resnet50"                   # 文本与对比图输出目录（留空走默认命名）
 keep_raw_npy = true                                     # 是否保留原始 samoo_result.npy
