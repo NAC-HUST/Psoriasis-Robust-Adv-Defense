@@ -8,12 +8,14 @@
 
 ## 项目简介
 
-项目实现了一个完整的对抗攻防闭环：
+项目当前聚焦一个可执行的最小闭环：
 
-1. 在 `dataset/split_data/` 格式的数据集上**训练**多分类分类器（ResNet50/SigLIP）。
-2. 使用 **SAMOO** 稀疏黑盒进化攻击评估模型鲁棒性。
-3. 从频域、空间、置信度三个维度进行**脆弱性分析**。
-4. 使用**区域感知高低频净化防御**（freq_region_purify）抵御稀疏攻击。
+1. 预处理 `dataset/raw_data/<datadir>/` 并自动识别子目录类别。
+2. 以“等比缩放 + 中心裁剪”统一为 `224x224`（不拉伸）。
+3. 输出到 `dataset/processed_data/<datadir>/` 并生成 `class_manifest.csv`。
+4. 下载两类预训练模型（ResNet50、SigLIP）。
+5. 训练多分类分类器（ResNet50 / SigLIP）。
+6. 在单样本上运行 SAMOO 对抗攻击并保存结果。
 
 > 说明：当前代码以 `src/psorad` 为主实现，基于[phoenixwilliams/Black-Box-Sparse-Adversarial-Attack-via-Multi-Objective-Optimisation](https://github.com/phoenixwilliams/Black-Box-Sparse-Adversarial-Attack-via-Multi-Objective-Optimisation)项目进行重构。
 
@@ -21,47 +23,30 @@
 
 ```text
 dataset/
-    split_data/
-        <dataset>/
-            images/
-                train/
-                val/
-                test/
-            labels/
-                train_labels.csv       # one-hot 标签格式
-                val_labels.csv
-                test_labels.csv
+	raw_data/
+		<datadir>/
+			<class_a>/
+			<class_b>/
+	processed_data/
+		<datadir>/               # 预处理输出目录
+			<class_a>/
+			<class_b>/
+			class_manifest.csv
 
 model/
-    pretrained_model/
-        resnet/
-        siglip/
-    trained_classifier/
-        resnet50/
-        siglip/
+	pretrained_model/
+		resnet/
+		siglip/
+	trained_classifier/
+		resnet50/
+		siglip/
 
 src/psorad/
-    preprocess/                # 数据预处理
-    data/                      # Dataset / DataLoader
-    models/                    # 模型构建、工厂、训练
-    attack/                    # SAMOO 稀疏攻击
-    eval/                      # 评估与脆弱性分析
-    defense/                   # 区域感知净化防御
-    config.py                  # 配置 dataclass 与 TOML loader
-    cli.py                     # CLI 入口（6 个子命令）
-
-tools/
-    batch_parallel_attack.py   # 批量并行攻击
-    batch_train_splitdata.py   # 统一训练 5 个 split_data 数据集
-    generate_attack_manifest.py# split_data → 攻击 manifest 桥接
-    batch_run_attacks.py       # 批量攻击编排与基线汇总
-
-output/                        # 实验产物（gitignored）
-    batch_attack/
-    batch_attack_minpx/
-    eval/
-    defense/
-    attack_results/
+	preprocess/                # 数据预处理
+	data/                      # Dataset / DataLoader
+	models/                    # 下载与模型构建
+	trainers/                  # 分类器训练
+	attack/                    # SAMOO 攻击
 ```
 
 ## 环境准备
@@ -84,24 +69,31 @@ uv sync
 
 ### 1) 预处理与 manifest 生成
 
+注意，在运行之前，你需要先将数据集文件下载到相应位置。
+
 ```bash
 uv run main.py preprocess \
-    --dataset-root dataset \
-    --datadir psoriasis_normal \
-    --image-size 224
+	--dataset-root dataset \
+	--datadir psoriasis_normal \
+	--image-size 224
 ```
 
 要求原始数据目录结构如下：
 
 ```text
 dataset/raw_data/psoriasis_normal/
-    normal/
-        img1.jpg
-    psoriasis/
-        img2.jpg
+	normal/
+		img1.jpg
+	psoriasis/
+		img2.jpg
 ```
 
-类别名直接取子目录名（如 `normal`、`psoriasis`）。输出到 `dataset/processed_data/`。
+类别名直接取子目录名（如 `normal`、`psoriasis`）。
+
+输出：
+
+- `dataset/processed_data/psoriasis_normal/<class_name>/*.jpg`
+- `dataset/processed_data/psoriasis_normal/class_manifest.csv`
 
 ### 2) 下载预训练模型
 
@@ -118,145 +110,117 @@ uv run main.py download-models
 
 ### 3) 训练分类模型
 
-#### 单数据集训练（manifest 方式）
+#### ResNet50
 
 ```bash
 uv run main.py train \
-    --backbone resnet50 \
-    --datadir psoriasis_normal \
-    --modelname resnet50_psoriasis_v1.pt \
-    --epochs 3 \
-    --batch-size 16 \
-    --learning-rate 1e-4
+	--backbone resnet50 \
+	--datadir psoriasis_normal \
+	--modelname resnet50_psoriasis_v1.pt \
+	--epochs 3 \
+	--batch-size 16 \
+	--learning-rate 1e-4
 ```
 
-#### 实验配置方式（split_data 格式）
+#### SigLIP
 
 ```bash
 uv run main.py train \
-    --experiment-config configs/dataset_config/baseline_dataset.toml \
-    --backbone resnet50 \
-    --datadir psoriasis_normal
+	--backbone siglip \
+	--datadir psoriasis_normal \
+	--modelname siglip_psoriasis_v1.pt \
+	--epochs 3 \
+	--batch-size 16 \
+	--learning-rate 1e-4 \
+	--freeze-siglip-backbone
 ```
 
-#### 批量训练 5 个 split_data 数据集
+输出 checkpoint：
 
-```bash
-.venv/bin/python tools/batch_train_splitdata.py
-```
+- 默认：`model/trained_classifier/<backbone>/best_classifier.pt`
+- 若设置 `--modelname`：`model/trained_classifier/<backbone>/<modelname>`
 
-统一参数：epochs=5, batch_size=32, lr=1e-4, seed=42, image_size=224。
+训练同时会在同目录输出本次数据划分清单：
 
-输出 checkpoint 到 `model/trained_classifier/resnet50/resnet50_<dataset>.pt`。
+- `model/trained_classifier/<backbone>/<modelname_stem>_train-val-split.csv`
+
+该 CSV 含 `split` 列（`train` / `val`），用于复现本次训练时的样本划分。
 
 ### 4) 运行 SAMOO 攻击
 
-#### 单样本攻击
+```bash
+uv run main.py attack \
+	--backbone resnet50 \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
+	--datadir psoriasis_normal \
+	--sample-index 0
+```
+
+说明：攻击默认 `--attack-split val`，即只从验证集子集取样。
+`--sample-index` 对应“子集内编号”（0-based），不是全量 manifest 的全局行号。
+攻击日志与 summary 会同时记录 `sample_index_subset` 与 `sample_index_global`。
+
+默认输出：
+
+- `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/summary.txt`
+- `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/summary.json`
+- `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/attack_log.txt`
+- `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/before_after_diff.png`
+- `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/samoo_result.npy`（原始结果，默认保留）
+
+运行 `attack` 时，终端会输出更详细的过程信息，包括：
+
+- 当前使用的数据清单与 datadir、采样图像路径与原始标签
+- 被攻击模型（backbone + checkpoint）与原图预测置信度（含 Top-K）
+- SAMOO 进化过程（初始化种群、迭代进度、可行解数量、选择/交叉/变异后的查询量）
+- 最终结果（是否攻击成功、查询次数、修改像素数、对抗样本前后置信度）
+
+上述终端内容会同步写入 `attack_log.txt` 便于复盘。
+
+如需指定导出目录并删除原始 `npy`：
 
 ```bash
 uv run main.py attack \
-    --backbone resnet50 \
-    --checkpoint model/trained_classifier/resnet50/best_classifier.pt \
-    --manifest-csv output/manifests/<dataset>_manifest.csv \
-    --datadir <dataset> \
-    --sample-index 0
+	--backbone resnet50 \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--export-dir output/attack/attack_case_001 \
+	--no-raw-npy
 ```
 
-#### 生成攻击 manifest（split_data → 攻击格式）
+### 4.1) 批量并行攻击（tools 脚本）
 
 ```bash
-.venv/bin/python tools/generate_attack_manifest.py
-```
-
-输出 `output/manifests/<dataset>_manifest.csv`（含 `file_path, class_idx, class_name, split`）。
-
-#### 批量并行攻击
-
-```bash
-.venv/bin/python tools/batch_parallel_attack.py \
-    --backbone resnet50 \
-    --checkpoint model/trained_classifier/resnet50/resnet50_<dataset>.pt \
-    --manifest-csv output/manifests/<dataset>_manifest.csv \
-    --datadir <dataset> \
-    --attack-split val \
-    --max-samples 20 \
-    --workers 2
-```
-
-默认输出根目录为 `output/batch_attack/<backbone>/<datadir>/`。报告含：
-
-- `batch_report.json`（完整结构化报告）
-- `batch_report.csv`（逐样本统计）
-- `batch_report.md`（人类可读总结）
-
-#### 批量攻击编排（5 数据集基线）
-
-```bash
-.venv/bin/python tools/batch_run_attacks.py --max-samples 20 --workers 2
-```
-
-输出 `output/eval/baseline_comparison.md`（ASR / RobustAcc 对比表）。
-
-### 5) 评估与脆弱性分析
-
-`evaluate` 子命令对某个划分做干净前向推理并计算指标，读取批量攻击报告汇总鲁棒性（ASR / robust_acc），并自动进行脆弱性分析。
-
-```bash
-uv run main.py evaluate \
-    --backbone resnet50 \
-    --checkpoint model/trained_classifier/resnet50/resnet50_<dataset>.pt \
-    --manifest-csv output/manifests/<dataset>_manifest.csv \
-    --split val \
-    --batch-report output/batch_attack/resnet50/<dataset>/batch_report.json \
-    --grid-size 7 \
-    --high-freq-cutoff 0.25 \
-    --save-visuals \
-    --output-dir output/eval/<dataset>
-```
-
-也可用配置文件驱动：
-
-```bash
-uv run main.py evaluate --config configs/eval_config/baseline_eval.toml
+uv run python tools/batch_parallel_attack.py \
+	--backbone resnet50 \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--manifest-csv model/trained_classifier/resnet50/best_classifier_train-val-split.csv \
+	--datadir psoriasis_normal \
+	--attack-split val \
+	--start-index 0 \
+	--max-samples 100 \
+	--workers 4
 ```
 
 说明：
 
-- Clean 指标：accuracy、macro precision/recall/f1、per-class f1、AUC、混淆矩阵。
-- Robust 指标：ASR、robust_acc、queries/l2/linf/modified_pixels 的 mean/median/p90、per-class 成功率。
-- **脆弱性分析**：成功率×代价关联、空间脆弱性热图（7×7 网格）、频域高频能量占比（2D FFT）、中心vs边缘扰动能量比。
-- 输出 `output/eval/<dataset>/eval_report.{json,md}` + `vuln_spatial_heatmap.png`。
+- 终端会显示 `tqdm` 进度条（已完成/成功/错误计数）。
+- 默认输出根目录为 `output/batch_attack/<backbone>/<datadir>/`。
+- 每个样本输出在 `sample_<subset_index>/` 子目录，包含单样本 `summary.json/txt`、日志和图像。
+- 批量统计报告输出：
+  - `batch_report.json`（完整结构化报告）
+  - `batch_report.csv`（逐样本统计表）
+  - `batch_report.md`（人类可读总结）
 
-### 6) 净化防御
-
-高低频 + 区域感知输入净化防御（freq_region_purify），无需重训练。
-
-```bash
-uv run main.py defend \
-    --backbone resnet50 \
-    --checkpoint model/trained_classifier/resnet50/resnet50_<dataset>.pt \
-    --batch-report output/batch_attack/resnet50/<dataset>/batch_report.json \
-    --window 3 \
-    --threshold 0.08 \
-    --dilation 1 \
-    --low-freq-cutoff 0.25 \
-    --low-freq fft \
-    --output-dir output/defense
-```
-
-也可用配置文件驱动：
+若你希望同一数据集保留多次运行记录，可加 `--run-name` 放到子目录：
 
 ```bash
-uv run main.py defend --config configs/defence_config/example_defence.toml
+uv run python tools/batch_parallel_attack.py \
+	--backbone resnet50 \
+	--checkpoint model/trained_classifier/resnet50/best_classifier.pt \
+	--datadir psoriasis_normal \
+	--run-name run_20260331_1
 ```
-
-说明：
-
-- **区域感知掩码**：像素偏离局部中值 > threshold 即标记为可疑。
-- **低频重建**：FFT 低通滤波或局部中值重建可疑区域。
-- **只替换可疑像素**，保留干净区域 → clean acc 下降为 0。
-- 输出 `output/defense/<backbone>/<dataset>/defense_report.{json,md}`。
-- 指标：clean_acc_drop、recovery_rate（攻击成功样本恢复率）、robust_acc_after。
 
 ## CLI 参数速查
 
@@ -264,6 +228,8 @@ uv run main.py defend --config configs/defence_config/example_defence.toml
 
 - `--dataset-root`：数据集根目录（默认 `dataset`）
 - `--datadir`：数据集目录名，对应 `raw_data/<datadir>`（必填）
+- `--raw-data-root`：原始数据根目录（默认 `<dataset-root>/raw_data`）
+- `--processed-data-root`：处理后数据根目录（默认 `<dataset-root>/processed_data`）
 - `--image-size`：统一尺寸（默认 224）
 
 ### download-models
@@ -273,80 +239,52 @@ uv run main.py defend --config configs/defence_config/example_defence.toml
 ### train
 
 - `--backbone`：`resnet50` 或 `siglip`（必填）
-- `--datadir` / `--manifest-csv` / `--experiment-config`：数据来源（`--experiment-config` 优先）
-- `--epochs` / `--batch-size` / `--learning-rate` / `--seed`
-- `--val-ratio` / `--num-workers` / `--image-size`
-- `--modelname`：输出模型文件名
-- `--freeze-siglip-backbone`
+- `--datadir`：默认读取 `dataset/processed_data/<datadir>/class_manifest.csv`
+- `--manifest-csv`：手动指定清单（优先级高于 `--datadir`）
+- `--modelname`：训练输出模型文件名（默认 `best_classifier.pt`）
+- `--epochs` / `--batch-size` / `--learning-rate`
+- `--val-ratio`：验证集比例
+- `--seed`：随机种子
+- `--num-workers`：DataLoader worker 数
+- `--image-size`：输入尺寸（默认 224）
+- `--freeze-siglip-backbone`：仅对 SigLIP 生效
 
 ### attack
 
-- `--backbone` / `--checkpoint`：必填
-- `--datadir` / `--manifest-csv`：数据来源
-- `--attack-split`：`all` / `train` / `val`（默认 `val`）
-- `--sample-index`：攻击样本索引
-- `--eps` / `--iterations` / `--pop-size` / `--query-budget`：攻击强度（不传时自动预设）
-- `--export-dir`：输出目录
-- 其余超参数：`--pc` / `--pm` / `--pm-end` / `--p-size` / `--zero-probability` / `--seed`
-
-### evaluate
-
-- `--config`：TOML 配置（优先于显式参数）
-- `--backbone` / `--checkpoint` / `--manifest-csv`
-- `--split`：`all` / `train` / `val`
-- `--batch-report`：批量攻击报告路径（鲁棒性 + 脆弱性来源）
-- `--grid-size`：空间网格划分（默认 7）
-- `--high-freq-cutoff`：高频截止比例（默认 0.25）
-- `--save-visuals`：保存空间热图
-- `--output-dir` / `--report-name`
-- `--skip-clean`：跳过前向推理，仅汇总
-
-### defend
-
-- `--config`：TOML 配置（优先于显式参数）
-- `--backbone` / `--checkpoint` / `--batch-report`：必填
-- `--window`：局部中值窗口（默认 3）
-- `--threshold`：可疑像素阈值（默认 0.08）
-- `--dilation`：区域膨胀（默认 1）
-- `--low-freq-cutoff`：FFT 截止比例（默认 0.25）
-- `--low-freq`：重建方式，`fft` / `median`
-- `--output-dir` / `--report-name`
+- `--backbone`：`resnet50` 或 `siglip`（必填）
+- `--checkpoint`：训练好的 checkpoint（必填）
+- `--datadir`：默认读取 `dataset/processed_data/<datadir>/class_manifest.csv`
+- `--manifest-csv`：手动指定清单（优先级高于 `--datadir`）
+- `--attack-split`：攻击子集（`all` / `train` / `val`，默认 `val`）
+- `--val-ratio`：当清单不含 `split` 列时，用于重建 train/val 划分（默认 `0.2`）
+- `--split-seed`：当清单不含 `split` 列时，划分随机种子（默认 `42`）
+- `--sample-index`：攻击样本索引（子集内 0-based 编号）
+- `--image-size`：攻击样本读取尺寸（默认 224）
+- `--save-path`：自定义原始 `npy` 结果路径（默认在 `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/samoo_result.npy`）
+- `--export-dir`：攻击文本与图像结果目录（默认在 `output/attack/<backbone>/<datadir>-<model_name>-<sample_index>/`）
+- `--no-raw-npy`：不保留原始 `npy`
+- `--eps` / `--iterations` / `--pop-size`：攻击强度核心参数（不传时按图像分辨率自动预设）
+- `--query-budget`：查询预算上限（不传时按图像分辨率自动预设）
+- `--pm-end`：末期变异率（与 `--pm` 形成线性退火，提升中后期收敛稳定性）
+- `--p-size`：单步扰动幅度（不传时按图像分辨率自动预设）
+- 当原图置信度极高（如 `true_class_conf >= 0.995`）且未手动指定核心参数时，攻击器会自动上调 `eps/query-budget/pop-size`，提高跨越决策边界的概率。
+- `--include-dist` + `--max-dist`：是否启用距离约束筛选
+- `--seed`：随机种子
 
 ### tools/batch_parallel_attack.py
 
-- `--backbone` / `--checkpoint` / `--manifest-csv`：必填
-- `--attack-split` / `--sample-indices` / `--max-samples`
-- `--workers`：并行进程数
-- `--output-root` / `--run-name`
-- 其余 SAMOO 超参数同 `attack` 子命令。
+- `--backbone` / `--checkpoint`：必填，指定底模与权重。
+- `--datadir` / `--manifest-csv`：数据来源（`manifest-csv` 优先）。
+- `--attack-split` / `--val-ratio` / `--split-seed`：子集定义方式。
+- `--sample-indices`：指定逗号分隔的子集内索引（优先于 `--start-index/--max-samples`）。
+- `--workers`：并行进程数。
+- `--keep-raw-npy`：保留每样本 `samoo_result.npy`（默认删除）。
+- `--output-root`：批量输出根目录（默认 `output/batch_attack`）。
+- `--run-name`：运行名（默认按时间戳自动生成）。
+- 其余攻击超参数（`--eps` / `--iterations` / `--pop-size` / `--query-budget` 等）与 `attack` 子命令一致。
 
-## 实验基线（参考）
-
-5 个 `dataset/split_data/` 数据集统一训练 + 攻击基线：
-
-| 数据集 | 类别 | Val Acc | ASR | Robust Acc |
-|--------|------|---------|-----|------------|
-| psoriasis224_2c | 2 | 99.82% | 15% | 85% |
-| cifar32_10c | 10 | 88.13% | 100% | 0% |
-| imagenette224_10c | 10 | 98.80% | 65% | 35% |
-| dermamnist224_7c | 7 | 83.22% | 90% | 10% |
-| milk10k_11c | 11 | 65.72% | 95% | 5% |
-
-脆弱性分析表明：SAMOO 稀疏攻击扰动约 **95% 能量位于高频带**、**~73% 在图像边缘区域**。
-
-净化防御（freq_region_purify）恢复率 68–100%，**clean acc 下降为 0**。
-
-详情见 `output/eval/<dataset>/eval_report.md` 和 `output/defense/<backbone>/<dataset>/defense_report.md`。
-
-## 攻击超参数解读（SAMOO）
-
-- `eps`：允许修改的像素位置数量；越大越容易成功，但扰动更明显。
-- `query-budget`：总查询预算；推荐优先固定预算，再调 `pop-size` 与 `iterations`。
-- `pm` / `pm-end`：变异率起止值；算法会从 `pm` 逐步退火到 `pm-end`。
-- `p-size`：每次像素扰动步长；不一定要 1/255 量级，黑盒稀疏攻击常用 `0.25~2.0`。
-- `iterations` / `pop-size`：进化迭代轮数和种群大小。
-- `zero-probability`：每个像素通道扰动为 0 的概率；越低表示扰动更"密"。
-- `include-dist` + `max-dist`：是否用距离阈值筛可行解；会降低成功率。
+说明：在多分类任务中，攻击摘要会输出通用置信度字段（`prob_true_before/after`、`prob_pred_before/after`）。
+`prob_class1_*` 仅为兼容旧版字段，不代表“psoriasis 概率”。
 
 ## 常见问题
 
@@ -354,18 +292,42 @@ uv run main.py defend --config configs/defence_config/example_defence.toml
 
 SigLIP 路径依赖 `transformers`。请确认环境安装了项目依赖，或先使用 ResNet50 流程。
 
-### 2) checkpoint 加载失败
+### 2) `manifest 为空`
 
-请确保 `--backbone` 与 checkpoint 对应一致（如 ResNet50 checkpoint 不可用于 SigLIP）。
+检查：
 
-### 3) 攻击结果 `success=False`
+- `dataset/raw_data/<datadir>/` 下是否有至少一个类别子目录。
+- 每个类别子目录内是否包含可识别图像文件（jpg/png/webp 等）。
+- 是否正确传入了 `--datadir`。
 
-这不代表代码错误，通常表示"在当前预算与约束下未找到可行扰动"。建议：
+### 3) checkpoint 加载失败
+
+请确保 `--backbone` 与 checkpoint 对应一致（例如 ResNet50 checkpoint 不可用于 SigLIP）。
+
+### 4) 攻击结果 `success=False`
+
+这不代表代码错误，通常表示“在当前预算与约束下未找到可行扰动”。
+
+建议：
 
 - 增加搜索预算：`--iterations`、`--pop-size`
 - 增大扰动空间：`--eps`、`--p-size`
-- 关闭距离约束筛选：不要加 `--include-dist`
+- 关闭距离约束筛选（默认已关闭）：不要加 `--include-dist`
 - 更换样本索引：有些样本本身更难攻击
+
+## 攻击超参数解读（SAMOO）
+
+- `eps`：允许修改的像素位置数量；越大越容易成功，但扰动更明显。
+- `query-budget`：总查询预算；推荐优先固定预算，再调 `pop-size` 与 `iterations`。
+- `pm` / `pm-end`：变异率起止值；算法会从 `pm` 逐步退火到 `pm-end`。
+- `p-size`：每次像素扰动步长（输入空间，单位约等于像素归一化值）；越大越容易翻转。
+- 说明：`p-size` 不是必须按 `1/255` 量级设置；在黑盒稀疏攻击里常用更大步长（如 `0.25~2.0`）以提高成功率。
+- `iterations`：进化迭代轮数；越大搜索更充分但更慢。
+- `pop-size`：每代候选解数量；越大多样性更好但计算更重。
+- `pm`：变异概率；高一点有助于跳出局部最优。
+- `pc`：交叉概率；调节父代信息重组强度。
+- `zero-probability`：每个像素通道扰动为 0 的概率；越低表示扰动更“密”。
+- `include-dist` + `max-dist`：是否用距离阈值筛可行解；用于“更隐蔽攻击”，但会降低成功率。
 
 ## 开发与贡献
 
@@ -376,10 +338,17 @@ SigLIP 路径依赖 `transformers`。请确认环境安装了项目依赖，或�
 ## 整体规划 · WIP
 
 ### 1. 面向医学影像的定向对抗攻击方法
-研究生成人眼不可察觉且具有高迁移性的对抗扰动方法。设计多目标攻击策略，在保证扰动微小的同时最大化分类器误判率。通过分析攻击成功区域，定位模型决策中的脆弱环节，挖掘对诊断敏感的关键区域。
+- 研究生成人眼不可察觉且具有高迁移性的对抗扰动方法。
+- 设计多目标攻击策略，在保证扰动微小的同时最大化分类器误判率。
+- 通过分析攻击成功区域，定位模型决策中的脆弱环节，挖掘对诊断敏感的关键区域。
 
 ### 2. 基于对抗样本反馈的鲁棒分类器优化
-提取模型在医学影像中的决策脆弱区域，作为空间注意力引导信号。构建融合区域感知的对抗训练与特征一致性正则化机制。
+- 提取模型在医学影像中的决策脆弱区域，作为空间注意力引导信号。
+- 构建融合区域感知的对抗训练与特征一致性正则化机制。
+- 在关键诊断区域增强特征稳定性，在非敏感区域适度松弛约束。
 
-### 3. 攻击-防御协同演化的联合优化框架
-设计动态交互的闭环优化系统，使攻击模块与防御模块相互驱动、协同演化。引入多目标攻防机制，驱动攻击器与防御器在训练中协同演化。
+### 3. 攻击 - 防御协同演化的联合优化框架
+- 设计动态交互的闭环优化系统，使攻击模块与防御模块相互驱动、协同演化。
+- 引入多目标攻防机制，驱动攻击器与防御器在训练中协同演化。
+- 最终形成既能精准识别病灶、又对抗扰具有强内在鲁棒性的诊断系统。
+

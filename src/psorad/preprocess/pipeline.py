@@ -31,7 +31,11 @@ def _resize_and_save(src: Path, dst: Path, image_size: int) -> None:
 
 
 def _discover_class_dirs(raw_dataset_dir: Path) -> list[Path]:
-    return [p for p in sorted(raw_dataset_dir.iterdir()) if p.is_dir() and any(_is_image_file(x) for x in p.rglob("*"))]
+    return [
+        p
+        for p in sorted(raw_dataset_dir.iterdir())
+        if p.is_dir() and any(_is_image_file(x) for x in p.rglob("*"))
+    ]
 
 
 def preprocess_dataset_and_build_manifest(config: PreprocessConfig) -> pd.DataFrame:
@@ -40,7 +44,10 @@ def preprocess_dataset_and_build_manifest(config: PreprocessConfig) -> pd.DataFr
 
     class_dirs = _discover_class_dirs(config.raw_dataset_dir)
     if not class_dirs:
-        raise RuntimeError(f"未在 {config.raw_dataset_dir} 发现包含图像的类别子目录，请按 raw_data/<datadir>/<class_name>/*.jpg 组织数据。")
+        raise RuntimeError(
+            f"未在 {config.raw_dataset_dir} 发现包含图像的类别子目录，"
+            "请按 raw_data/<datadir>/<class_name>/*.jpg 组织数据。"
+        )
 
     rows: list[dict[str, str | int]] = []
     for class_idx, class_dir in enumerate(class_dirs):
